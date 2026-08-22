@@ -4,33 +4,9 @@ Record conflicts that a later ADR or explicit user instruction must resolve. Do 
 
 ## Open decisions
 
-### D-001 — Keep, freeze, or replace the three-module scaffold
-
-The repository currently has `api-gateway`, `core-service`, and `common-models`. Both the blueprint and the cost-optimized MVP require a Spring Boot modular monolith.
-
-Options:
-
-1. Freeze the existing modules and add `apps/platform-service` as the real application.
-2. Collapse into one deployable module in a dedicated later PR after ADR-001.
-3. Keep the names but change their meaning, which is likely to confuse reviewers.
-
-Blocked application work: module layout, packaging, and local run commands.
-
-### D-002 — MongoDB and Redis already in the environment
-
-`core-service` depends on Spring Data MongoDB. `.cursor/install.sh` and `start.sh` install Redis and MongoDB. The MVP override forbids introducing Redis and treats PostgreSQL as the only primary database.
-
-Assumption until ADR-001: do not add new MongoDB or Redis usage. Removal or replacement is a later approved PR.
-
-### D-003 — Blueprint AWS stack versus cost-optimized MVP
-
-The blueprint recommends SQS, S3, WAF, API Gateway, Bedrock, Terraform/CDK, and separate workers. The operating prompt forbids those for the MVP unless separately approved.
-
-Assumption until an ADR says otherwise: follow the cost-optimized MVP override and keep provider interfaces for later migration.
-
 ### D-004 — Churn label and horizon
 
-The blueprint stop condition still applies: do not implement model training until the churn label, prediction horizon, scored entity, and leakage rules are approved. PR-002 should name these as explicit defaults or `BLOCKED` items, not invent customer facts.
+The blueprint stop condition still applies: do not implement model training until the churn label, prediction horizon, scored entity, and leakage rules are approved. A later PRD PR should name these as explicit defaults or `BLOCKED` items, not invent customer facts.
 
 ### D-005 — Branch naming
 
@@ -38,6 +14,22 @@ The operating prompt asked for `pr/PR-XXX-short-description`. Cloud Agent policy
 
 Assumption: use `cursor/pr-XXX-short-description-9d98` unless the user overrides it.
 
-## Resolved in PR-001
+### D-006 — When to delete frozen scaffold modules
 
-None. PR-001 only documents the conflicts.
+ADR-001 freezes `api-gateway`, `core-service`, and `common-models`. It does not choose a deletion date. A later PR must list the exact files and receive approval before any module or dependency is removed.
+
+The modular monolith target is already accepted; only the disposal of placeholders remains open.
+
+## Resolved
+
+### D-001 — Three-module scaffold
+
+Resolved by ADR-001: freeze the existing modules as placeholders. Add `/apps/platform-service`, `/apps/worker`, and `/apps/console` in later PRs. Do not reuse the old names for the new apps.
+
+### D-002 — MongoDB and Redis
+
+Resolved by ADR-001: MongoDB is not approved. Redis is not approved unless a later ADR states a concrete requirement. Do not add new usage. Removal is a later approved PR that lists exact files.
+
+### D-003 — AWS stack versus MVP
+
+Resolved by ADR-001: PostgreSQL is the primary store. Local SQS/S3 or LocalStack-compatible substitutes are approved. `/apps/worker` is a same-version background process, not a microservice extraction. WAF, API Gateway, Bedrock, Terraform/CDK, and multi-environment cloud accounts remain unapproved.

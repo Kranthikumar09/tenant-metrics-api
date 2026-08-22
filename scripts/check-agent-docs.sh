@@ -67,6 +67,18 @@ require_heading "docs/agent/backlog.md" "PR-002"
 require_heading "docs/agent/decisions-needed.md" "## Open decisions"
 require_heading "docs/agent/decisions-needed.md" "modular monolith"
 
+require_file "docs/architecture/ADRs/ADR-001-mvp-architecture.md"
+require_file "docs/architecture/context-map.md"
+
+require_heading "docs/architecture/ADRs/ADR-001-mvp-architecture.md" "Status: Accepted"
+require_heading "docs/architecture/ADRs/ADR-001-mvp-architecture.md" "platform-service"
+require_heading "docs/architecture/ADRs/ADR-001-mvp-architecture.md" "PostgreSQL"
+require_heading "docs/architecture/ADRs/ADR-001-mvp-architecture.md" "MongoDB"
+require_heading "docs/architecture/ADRs/ADR-001-mvp-architecture.md" "Redis"
+require_heading "docs/architecture/context-map.md" "## Current modules"
+require_heading "docs/architecture/context-map.md" "## Target modules"
+require_heading "docs/architecture/context-map.md" "Freeze"
+
 if [[ "${failures}" -gt 0 ]]; then
   echo
   echo "check-agent-docs: FAIL (${failures} missing required items)"
