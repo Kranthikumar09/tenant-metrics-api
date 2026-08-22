@@ -4,18 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-002 — Create the Milestone 0 product contract (`docs/product/PRD.md`)**
+**PR-004 — Data classification and ADR template**
 
-- Capacity: S
-- Why next: foundation CI is in place; product defaults and BLOCKED items are still missing
-- Main dependency: docs / ADR-001
-- Out of scope: application code, threat model, OpenAPI, scoring implementation
+- Capacity: XS
+- Why next: PRD exists; remaining Milestone 0 pack items are data classification and an ADR template
+- Main dependency: PR-002
+- Out of scope: threat model, application code, OpenAPI
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-004 | Data classification and ADR template | XS | PR-002 | Remaining M0 product-pack item |
 | PR-005 | Threat model | S | PR-004 | Remaining M0 exit gate |
 | PR-007 | LocalStack-compatible SQS/S3 on Compose | S | ADR-001, PR-3 | Do not add Redis or MongoDB |
 | PR-009 | `/apps/worker` same-version process skeleton | S | ADR-001, PR-1 | Not a microservice extraction |
@@ -31,7 +30,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-2 | PostgreSQL JDBC, Flyway, and Testcontainers for platform-service | implemented |
 | PR-3 | Docker Compose for local PostgreSQL only | implemented |
 | PR-4 | Canonical `./scripts/verify.sh` | implemented |
-| PR-5 | GitHub Actions CI for `./scripts/verify.sh` | implemented in this branch |
+| PR-5 | GitHub Actions CI for `./scripts/verify.sh` | implemented |
+| PR-002 | Milestone 0 product contract (`docs/product/PRD.md`) | implemented in this branch |
 
 ## Intentionally not scheduled
 

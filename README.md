@@ -12,13 +12,14 @@ The Maven reactor contains three placeholder modules from an earlier scaffold:
 - `core-service`
 - `api-gateway`
 
-The approved MVP direction is a Spring Boot modular monolith with PostgreSQL, not a microservice split and not MongoDB. That decision is recorded as open in `docs/agent/decisions-needed.md` and will be locked by an ADR before application behavior is added.
+The approved MVP direction is a Spring Boot modular monolith with PostgreSQL, not a microservice split and not MongoDB. Architecture is locked by ADR-001. The product contract is `docs/product/PRD.md`.
 
 ## Agent and product memory
 
 Start here:
 
 - `AGENTS.md` — operating model, MVP baseline, TDD, and stop conditions
+- `docs/product/PRD.md` — Milestone 0 product contract and BLOCKED items
 - `docs/agent/current-state.md` — what exists now
 - `docs/agent/project-index.md` — compact blueprint map
 - `docs/agent/backlog.md` — next small PRs
