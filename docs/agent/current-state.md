@@ -1,22 +1,20 @@
 # Current state
 
-Last updated after PR-007.
+Last updated after PR-009.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose now starts PostgreSQL and LocalStack SQS/S3. Identity and ingestion code do not exist.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. `/apps/worker` is a same-version non-web background process skeleton. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-007-localstack-compose-9d98`
+- Branch: `cursor/pr-009-worker-skeleton-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
-- ADR template: `docs/architecture/ADRs/ADR-template.md`
 - Product contract: `docs/product/PRD.md`
-- Data classification: `docs/security/data-classification.md`
 - Threat model: `docs/security/threat-model.md`
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
 - Build: Maven wrapper, Spring Boot 4.1.1 parent, Spring Cloud 2025.1.2 BOM
 - Frozen legacy modules: `common-models`, `core-service`, `api-gateway`
-- Target modules: `/apps/platform-service` (skeleton), `/apps/worker` (not created), `/apps/console` (not created)
+- Target modules: `/apps/platform-service` (skeleton), `/apps/worker` (skeleton), `/apps/console` (not created)
 - Frontend: none
 - Database migrations: `V1__platform_bootstrap.sql`
 - CI: `.github/workflows/verify.yml` runs `./scripts/verify.sh`
@@ -27,9 +25,9 @@ Last updated after PR-007.
 | Area | State |
 | --- | --- |
 | Product docs | ADR-001, PRD, data classification, ADR template, and threat model exist; OpenAPI does not |
-| Backend | `platform-service` with Actuator, JDBC, and Flyway; legacy modules still empty scaffolds |
-| Tests | context, `/actuator/health`, and PostgreSQL bootstrap query via Testcontainers |
-| Persistence | Flyway `V1__platform_bootstrap.sql` in `platform-service`; legacy `core-service` still declares JPA/MongoDB |
+| Backend | `platform-service` with Actuator, JDBC, and Flyway; `worker` boots as a non-web process; legacy modules still empty scaffolds |
+| Tests | platform-service context, health, and PostgreSQL bootstrap; worker context-load and non-web assertion |
+| Persistence | Flyway `V1__platform_bootstrap.sql` in `platform-service`; worker has no datastore |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
@@ -46,15 +44,16 @@ Still open:
 5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 6. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
 
+## What PR-009 added
+
+- `/apps/worker` Spring Boot process with `spring.main.web-application-type=none`
+- Enforcer ban on MongoDB and Redis
+- No dependency on frozen legacy modules
+- `./scripts/verify.sh` now tests and packages the worker
+
 ## What PR-007 added
 
-- LocalStack service on `docker-compose.yml` with `SERVICES: sqs,s3` only
-- No AWS keys, Redis, or MongoDB in Compose
-- Docs check requires LocalStack and forbids AWS key env vars
-
-## What PR-005 added
-
-- `docs/security/threat-model.md` STRIDE catalog
+- LocalStack SQS/S3 on Compose
 
 ## Next session load list
 
@@ -64,5 +63,4 @@ Still open:
 4. `docs/security/threat-model.md`
 5. `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
 6. `docs/architecture/context-map.md`
-7. `docker-compose.yml`
-8. `apps/platform-service` only, unless the task is about frozen modules
+7. `apps/platform-service` and `apps/worker` only, unless the task is about frozen modules

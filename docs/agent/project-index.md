@@ -18,7 +18,7 @@ Load a section only when the current PR needs it. Status values are `implemented
 | Reliability, webhooks, and operations | Transactional outbox, signed webhooks, SLOs, tenant-safe telemetry. | no outbox/worker yet | pending |
 | SaaS control plane | Onboarding, RBAC, entitlements, usage, billing, console, supportability. | no control-plane module yet | pending |
 | AI-assisted development rules | One bounded change, persistent context pack, human review of architecture and security. | `AGENTS.md`, `docs/agent/` | implemented |
-| Repository and deployment shape | Intended layout is `apps/platform-service`, `apps/worker`, `apps/console`, contracts, docs, and tests. | `apps/platform-service` skeleton exists; worker and console do not | pending |
+| Repository and deployment shape | Intended layout is `apps/platform-service`, `apps/worker`, `apps/console`, contracts, docs, and tests. | `apps/platform-service` and `apps/worker` skeletons exist; console does not | pending |
 | Milestone 0 — product contract | PRD, context map, data classification, ADR template, threat model. No application code. | PRD, context map, data classification, ADR template, and threat model exist; default churn label remains BLOCKED | pending |
 | Milestone 1 — repo, local env, CI | Buildable modular monolith, Compose, Testcontainers, canonical verify, CI. | Testcontainers, Compose, `./scripts/verify.sh`, and GitHub Actions verify workflow exist | implemented |
 | Milestone 2 — identity and tenancy | OIDC, API keys, immutable TenantContext, RBAC, audit, tenant-scoped schema. | none | pending |
