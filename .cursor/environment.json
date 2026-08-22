@@ -1,0 +1,21 @@
+{
+  "name": "tenant-metrics-api",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "core-service",
+      "description": "core-service (Spring Web + JPA/PostgreSQL + MongoDB) dev server on http://localhost:8081",
+      "command": "cd core-service && SERVER_PORT=8081 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/coredb SPRING_DATASOURCE_USERNAME=core SPRING_DATASOURCE_PASSWORD=core SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/coredb ./mvnw -ntp spring-boot:run"
+    },
+    {
+      "name": "api-gateway",
+      "description": "api-gateway (Spring Cloud Gateway) dev server on http://localhost:8080",
+      "command": "cd api-gateway && SERVER_PORT=8080 ./mvnw -ntp spring-boot:run"
+    }
+  ],
+  "ports": [
+    { "name": "api-gateway", "port": 8080 },
+    { "name": "core-service", "port": 8081 }
+  ]
+}
