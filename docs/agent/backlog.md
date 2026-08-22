@@ -4,23 +4,21 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-5 — Add GitHub Actions CI for `./scripts/verify.sh`**
+**PR-002 — Create the Milestone 0 product contract (`docs/product/PRD.md`)**
 
 - Capacity: S
-- Why next: verify.sh exists but is not yet run on every push
-- Main dependency: PR-4
-- Out of scope: deploying, cloud credentials, fixing frozen `core-service`
+- Why next: foundation CI is in place; product defaults and BLOCKED items are still missing
+- Main dependency: docs / ADR-001
+- Out of scope: application code, threat model, OpenAPI, scoring implementation
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-002 | Create the Milestone 0 product contract (`docs/product/PRD.md`) | S | docs | Product defaults; mark unresolved items BLOCKED |
 | PR-004 | Data classification and ADR template | XS | PR-002 | Remaining M0 product-pack item |
 | PR-005 | Threat model | S | PR-004 | Remaining M0 exit gate |
-| PR-006 | Canonical `./scripts/verify.sh` | S | PR-1 | Must not hide the pre-existing `core-service` failure |
-| PR-007 | Local PostgreSQL and LocalStack-compatible Compose | S | ADR-001, PR-2 | Do not add Redis or MongoDB |
-| PR-008 | GitHub Actions CI for the current checks | S | PR-006 | No cloud credentials |
+| PR-007 | LocalStack-compatible SQS/S3 on Compose | S | ADR-001, PR-3 | Do not add Redis or MongoDB |
+| PR-009 | `/apps/worker` same-version process skeleton | S | ADR-001, PR-1 | Not a microservice extraction |
 
 ## Completed
 
@@ -32,7 +30,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-1 | `/apps/platform-service` skeleton without MongoDB, Redis, or PostgreSQL | implemented |
 | PR-2 | PostgreSQL JDBC, Flyway, and Testcontainers for platform-service | implemented |
 | PR-3 | Docker Compose for local PostgreSQL only | implemented |
-| PR-4 | Canonical `./scripts/verify.sh` | implemented in this branch |
+| PR-4 | Canonical `./scripts/verify.sh` | implemented |
+| PR-5 | GitHub Actions CI for `./scripts/verify.sh` | implemented in this branch |
 
 ## Intentionally not scheduled
 
