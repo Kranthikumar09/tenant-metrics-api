@@ -118,6 +118,15 @@ require_heading "scripts/verify.sh" "apps/platform-service"
 require_heading "scripts/verify.sh" "check-agent-docs.sh"
 forbid_text "scripts/verify.sh" "-pl core-service"
 
+require_file ".github/workflows/verify.yml"
+require_heading ".github/workflows/verify.yml" "./scripts/verify.sh"
+require_heading ".github/workflows/verify.yml" "contents: read"
+require_heading ".github/workflows/verify.yml" "java-version: \"21\""
+forbid_text ".github/workflows/verify.yml" "pull_request_target"
+forbid_text ".github/workflows/verify.yml" "aws-actions/"
+forbid_text ".github/workflows/verify.yml" "configure-aws-credentials"
+forbid_text ".github/workflows/verify.yml" "-pl core-service"
+
 if [[ "${failures}" -gt 0 ]]; then
   echo
   echo "check-agent-docs: FAIL (${failures} missing required items)"
