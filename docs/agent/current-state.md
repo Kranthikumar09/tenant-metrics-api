@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-3.
+Last updated after PR-4.
 
 ## Snapshot
 
 `/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged.
 
-- Branch: `cursor/pr-3-postgres-compose-9d98`
+- Branch: `cursor/pr-4-verify-script-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
@@ -16,7 +16,7 @@ Last updated after PR-3.
 - Frontend: none
 - Database migrations: `V1__platform_bootstrap.sql`
 - CI: none
-- Canonical verify command: not yet; use `./mvnw -ntp -pl apps/platform-service -am test` and `./scripts/check-agent-docs.sh`
+- Canonical verify command: `./scripts/verify.sh`
 
 ## Repository maturity
 
