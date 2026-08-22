@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-2.
+Last updated after PR-3.
 
 ## Snapshot
 
 `/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged.
 
-- Branch: `cursor/pr-2-platform-postgres-testcontainers-9d98`
+- Branch: `cursor/pr-3-postgres-compose-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
@@ -27,7 +27,7 @@ Last updated after PR-2.
 | Tests | context, `/actuator/health`, and PostgreSQL bootstrap query via Testcontainers |
 | Persistence | Flyway `V1__platform_bootstrap.sql` in `platform-service`; legacy `core-service` still declares JPA/MongoDB |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
-| Docker / Compose | none |
+| Docker / Compose | `docker-compose.yml` starts PostgreSQL only |
 | Angular console | none |
 
 ## Known contradictions
