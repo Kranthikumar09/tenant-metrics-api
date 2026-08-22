@@ -4,12 +4,12 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-2 — Add PostgreSQL to `/apps/platform-service` with Testcontainers**
+**PR-3 — Add Docker Compose for local PostgreSQL**
 
-- Capacity: S
-- Why next: ADR-001 names PostgreSQL as the source of truth. PR-1 intentionally omitted JPA, JDBC, and the driver.
-- Main dependency: PR-1 skeleton
-- Out of scope: MongoDB, Redis, frozen-module changes, worker, console, LocalStack, Docker Compose for the whole stack
+- Capacity: XS
+- Why next: local `spring-boot:run` still has no database
+- Main dependency: PR-2
+- Out of scope: Redis, MongoDB, LocalStack, frozen modules
 
 ## Later candidates
 
@@ -29,7 +29,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-001 | Agent operating system and repository working memory | implemented |
 | PR-0 | ADR-001 MVP architecture and current context map | implemented |
 | PR-0.1 | Align `AGENTS.md` and architecture docs with ADR-001 | implemented |
-| PR-1 | `/apps/platform-service` skeleton without MongoDB, Redis, or PostgreSQL | implemented in this branch |
+| PR-1 | `/apps/platform-service` skeleton without MongoDB, Redis, or PostgreSQL | implemented |
+| PR-2 | PostgreSQL JDBC, Flyway, and Testcontainers for platform-service | implemented in this branch |
 
 ## Intentionally not scheduled
 

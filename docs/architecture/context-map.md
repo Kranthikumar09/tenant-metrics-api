@@ -12,13 +12,13 @@ Short map of what exists today versus the target locked by `ADR-001`. This is no
 | `core-service` | Empty Spring Boot web app with JPA, PostgreSQL driver, and MongoDB starters | Frozen legacy module. Do not treat as `apps/worker` or `platform-service`. |
 | `api-gateway` | Empty Spring Cloud Gateway app | Frozen legacy module. Do not treat as the public monolith. |
 
-`/apps/platform-service` exists as a bootable skeleton. There is no `/apps/worker`, `/apps/console`, Docker Compose, or LocalStack configuration.
+`/apps/platform-service` boots with JDBC and Flyway against Testcontainers PostgreSQL. There is no `/apps/worker`, `/apps/console`, Docker Compose, or LocalStack configuration.
 
 ## Target modules
 
 | Path | Role | Status |
 | --- | --- | --- |
-| `/apps/platform-service` | Spring Boot modular monolith | skeleton (no datastore) |
+| `/apps/platform-service` | Spring Boot modular monolith | JDBC + Flyway + Testcontainers PostgreSQL |
 | `/apps/worker` | Same-version background processor | pending |
 | `/apps/console` | Angular application | pending |
 
