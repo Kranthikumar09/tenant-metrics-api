@@ -110,8 +110,13 @@ require_heading "docs/architecture/context-map.md" "frozen legacy modules"
 
 require_file "docker-compose.yml"
 require_heading "docker-compose.yml" "postgres:16-alpine"
+require_heading "docker-compose.yml" "localstack"
+require_heading "docker-compose.yml" "SERVICES: sqs,s3"
+require_heading "docker-compose.yml" "4566"
 forbid_text "docker-compose.yml" "mongo"
 forbid_text "docker-compose.yml" "redis"
+forbid_text "docker-compose.yml" "AWS_SECRET_ACCESS_KEY"
+forbid_text "docker-compose.yml" "AWS_ACCESS_KEY_ID"
 
 require_file "scripts/verify.sh"
 require_heading "scripts/verify.sh" "apps/platform-service"
