@@ -141,6 +141,20 @@ require_heading "docs/product/PRD.md" "## Open decisions"
 require_heading "docs/product/PRD.md" "## Traceability"
 require_heading "docs/product/PRD.md" "BLOCKED"
 
+require_file "docs/security/data-classification.md"
+require_heading "docs/security/data-classification.md" "## Classes"
+require_heading "docs/security/data-classification.md" "## Forbidden data"
+require_heading "docs/security/data-classification.md" "## Handling rules"
+require_heading "docs/security/data-classification.md" "BLOCKED"
+forbid_text "docs/security/data-classification.md" "PCI certified"
+forbid_text "docs/security/data-classification.md" "HIPAA"
+
+require_file "docs/architecture/ADRs/ADR-template.md"
+require_heading "docs/architecture/ADRs/ADR-template.md" "## Context"
+require_heading "docs/architecture/ADRs/ADR-template.md" "## Decision"
+require_heading "docs/architecture/ADRs/ADR-template.md" "## Consequences"
+require_heading "docs/architecture/ADRs/ADR-template.md" "Status:"
+
 if [[ "${failures}" -gt 0 ]]; then
   echo
   echo "check-agent-docs: FAIL (${failures} missing required items)"
