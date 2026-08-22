@@ -24,6 +24,7 @@
 		<module>common-models</module>
 		<module>core-service</module>
 		<module>api-gateway</module>
+		<module>apps/platform-service</module>
 	</modules>
 
 	<properties>

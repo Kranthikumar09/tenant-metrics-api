@@ -4,22 +4,22 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-1 — Add an empty `/apps/platform-service` Maven module that boots without MongoDB or Redis**
+**PR-2 — Add PostgreSQL to `/apps/platform-service` with Testcontainers**
 
 - Capacity: S
-- Why next: first independently buildable piece of the layout locked by ADR-001
-- Main dependency: ADR-001
-- Out of scope: deleting `api-gateway`, `core-service`, or `common-models`; removing Mongo/Redis from those modules; worker; console; LocalStack; Docker Compose
+- Why next: ADR-001 names PostgreSQL as the source of truth. PR-1 intentionally omitted JPA, JDBC, and the driver.
+- Main dependency: PR-1 skeleton
+- Out of scope: MongoDB, Redis, frozen-module changes, worker, console, LocalStack, Docker Compose for the whole stack
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-002 | Create the Milestone 0 product contract (`docs/product/PRD.md`) | S | PR-001 docs | Product defaults; mark unresolved items BLOCKED |
+| PR-002 | Create the Milestone 0 product contract (`docs/product/PRD.md`) | S | docs | Product defaults; mark unresolved items BLOCKED |
 | PR-004 | Data classification and ADR template | XS | PR-002 | Remaining M0 product-pack item |
 | PR-005 | Threat model | S | PR-004 | Remaining M0 exit gate |
-| PR-006 | Canonical `./scripts/verify.sh` | S | PR-001 | Establish the verification pipeline before feature work |
-| PR-007 | Local PostgreSQL and LocalStack-compatible Compose | S | ADR-001, PR-1 | Do not add Redis or MongoDB |
+| PR-006 | Canonical `./scripts/verify.sh` | S | PR-1 | Must not hide the pre-existing `core-service` failure |
+| PR-007 | Local PostgreSQL and LocalStack-compatible Compose | S | ADR-001, PR-2 | Do not add Redis or MongoDB |
 | PR-008 | GitHub Actions CI for the current checks | S | PR-006 | No cloud credentials |
 
 ## Completed
@@ -28,7 +28,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | --- | --- | --- |
 | PR-001 | Agent operating system and repository working memory | implemented |
 | PR-0 | ADR-001 MVP architecture and current context map | implemented |
-| PR-0.1 | Align `AGENTS.md` and architecture docs with ADR-001 | implemented in this branch |
+| PR-0.1 | Align `AGENTS.md` and architecture docs with ADR-001 | implemented |
+| PR-1 | `/apps/platform-service` skeleton without MongoDB, Redis, or PostgreSQL | implemented in this branch |
 
 ## Intentionally not scheduled
 
