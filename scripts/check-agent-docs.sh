@@ -120,8 +120,21 @@ forbid_text "docker-compose.yml" "AWS_ACCESS_KEY_ID"
 
 require_file "scripts/verify.sh"
 require_heading "scripts/verify.sh" "apps/platform-service"
+require_heading "scripts/verify.sh" "apps/worker"
 require_heading "scripts/verify.sh" "check-agent-docs.sh"
 forbid_text "scripts/verify.sh" "-pl core-service"
+
+require_file "apps/worker/pom.xml"
+require_heading "apps/worker/pom.xml" "ban-mongodb-and-redis"
+forbid_text "apps/worker/pom.xml" "common-models"
+forbid_text "apps/worker/pom.xml" "core-service"
+forbid_text "apps/worker/pom.xml" "api-gateway"
+forbid_text "apps/worker/pom.xml" "spring-boot-starter-webmvc"
+forbid_text "apps/worker/pom.xml" "spring-boot-starter-data-mongodb"
+forbid_text "apps/worker/pom.xml" "spring-boot-starter-data-redis"
+
+require_file "apps/worker/src/main/java/com/tenantmetrics/worker/WorkerApplication.java"
+require_heading "apps/worker/src/main/java/com/tenantmetrics/worker/WorkerApplication.java" "@SpringBootApplication"
 
 require_file ".github/workflows/verify.yml"
 require_heading ".github/workflows/verify.yml" "./scripts/verify.sh"
