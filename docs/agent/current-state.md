@@ -1,13 +1,12 @@
 # Current state
 
-Last updated after PR-1.
+Last updated after PR-2.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 skeleton. It boots with Actuator health and no MongoDB, Redis, PostgreSQL, JPA, or JDBC. Frozen legacy modules are unchanged.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged.
 
-- Branch: `cursor/pr-1-platform-service-skeleton-9d98`
-- Draft PR: https://github.com/Kranthikumar09/tenant-metrics-api/pull/5
+- Branch: `cursor/pr-2-platform-postgres-testcontainers-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
@@ -15,7 +14,7 @@ Last updated after PR-1.
 - Frozen legacy modules: `common-models`, `core-service`, `api-gateway`
 - Target modules: `/apps/platform-service` (skeleton), `/apps/worker` (not created), `/apps/console` (not created)
 - Frontend: none
-- Database migrations: none
+- Database migrations: `V1__platform_bootstrap.sql`
 - CI: none
 - Canonical verify command: not yet; use `./mvnw -ntp -pl apps/platform-service -am test` and `./scripts/check-agent-docs.sh`
 
@@ -24,9 +23,9 @@ Last updated after PR-1.
 | Area | State |
 | --- | --- |
 | Product docs | Agent memory and ADR-001 exist; PRD, threat model, and OpenAPI do not |
-| Backend | `platform-service` skeleton with Actuator health; legacy modules still empty scaffolds |
-| Tests | platform-service context + `/actuator/health`; docs check; legacy `core-service` context-load still fails and is untouched |
-| Persistence | none in `platform-service`; `core-service` still declares JPA/PostgreSQL and MongoDB |
+| Backend | `platform-service` with Actuator, JDBC, and Flyway; legacy modules still empty scaffolds |
+| Tests | context, `/actuator/health`, and PostgreSQL bootstrap query via Testcontainers |
+| Persistence | Flyway `V1__platform_bootstrap.sql` in `platform-service`; legacy `core-service` still declares JPA/MongoDB |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | none |
 | Angular console | none |
@@ -39,6 +38,13 @@ Still open:
 2. `core-service` uses package `com.tenatmetrics`; other modules use `com.tenantmetrics`.
 3. `ApiResponse` is a generic envelope; the blueprint requires Problem Details–compatible errors.
 4. PR-0 and PR-0.1 were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 until that stack is merged there.
+
+## What PR-2 added
+
+- JDBC, Flyway, and the PostgreSQL driver on `platform-service`
+- Testcontainers PostgreSQL tests
+- One bootstrap migration
+- MongoDB/Redis Enforcer rule kept
 
 ## What PR-1 added
 
