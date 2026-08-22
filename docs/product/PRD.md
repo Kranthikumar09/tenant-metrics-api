@@ -120,7 +120,7 @@ Business outcome is measured improvement in retained revenue or reduced churn ve
 | P-003 | Exact intervention-exclusion filters | Families named above | **BLOCKED** |
 | P-004 | Score freshness and webhook numeric SLOs | Meet published SLOs | **BLOCKED** |
 | P-005 | Beta region | Blueprint suggested one AWS region; ADR-001 did not select AWS. Hosting remains Railway or another approved low-cost host | **BLOCKED** — do not provision a cloud region |
-| P-006 | Data sensitivity | No secrets, card data, health data, or free-form PII in event metadata | Default; classification doc still missing |
+| P-006 | Data sensitivity | No secrets, card data, health data, or free-form PII in event metadata | Default; see `docs/security/data-classification.md` |
 | P-007 | Pricing amounts | Unit is monthly platform fee plus metered accepted events | Amounts **BLOCKED** |
 | P-008 | Frozen module deletion | Exact file list required | **BLOCKED** until a later approved PR |
 
