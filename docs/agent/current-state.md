@@ -6,6 +6,8 @@ Last updated after PR-001.
 
 The repository is a greenfield Maven reactor with documentation memory for agent sessions. No customer-facing churn behavior exists.
 
+- Branch: `cursor/pr-001-agent-operating-system-9d98`
+- Draft PR: https://github.com/Kranthikumar09/tenant-metrics-api/pull/2
 - Branch baseline: `main` at the PR-001 starting commit
 - Language: Java 21
 - Build: Maven wrapper, Spring Boot 4.1.1 parent, Spring Cloud 2025.1.2 BOM
