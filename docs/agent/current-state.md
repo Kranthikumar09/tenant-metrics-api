@@ -7,6 +7,7 @@ Last updated after PR-1.
 `/apps/platform-service` is a Java 21 Spring Boot 4.1.1 skeleton. It boots with Actuator health and no MongoDB, Redis, PostgreSQL, JPA, or JDBC. Frozen legacy modules are unchanged.
 
 - Branch: `cursor/pr-1-platform-service-skeleton-9d98`
+- Draft PR: https://github.com/Kranthikumar09/tenant-metrics-api/pull/5
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
