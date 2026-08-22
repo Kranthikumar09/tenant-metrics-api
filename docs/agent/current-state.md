@@ -1,13 +1,14 @@
 # Current state
 
-Last updated after PR-5.
+Last updated after PR-002.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged. The Milestone 0 product contract is `docs/product/PRD.md`.
 
-- Branch: `cursor/pr-5-github-actions-verify-9d98`
+- Branch: `cursor/pr-002-product-prd-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
+- Product contract: `docs/product/PRD.md`
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
 - Build: Maven wrapper, Spring Boot 4.1.1 parent, Spring Cloud 2025.1.2 BOM
@@ -22,7 +23,7 @@ Last updated after PR-5.
 
 | Area | State |
 | --- | --- |
-| Product docs | Agent memory and ADR-001 exist; PRD, threat model, and OpenAPI do not |
+| Product docs | ADR-001 and `docs/product/PRD.md` exist; threat model, data classification, and OpenAPI do not |
 | Backend | `platform-service` with Actuator, JDBC, and Flyway; legacy modules still empty scaffolds |
 | Tests | context, `/actuator/health`, and PostgreSQL bootstrap query via Testcontainers |
 | Persistence | Flyway `V1__platform_bootstrap.sql` in `platform-service`; legacy `core-service` still declares JPA/MongoDB |
@@ -38,7 +39,14 @@ Still open:
 1. MongoDB and Redis remain installed/declared on frozen legacy modules. Removal requires a later PR that lists exact files and is approved.
 2. `core-service` uses package `com.tenatmetrics`; other modules use `com.tenantmetrics`.
 3. `ApiResponse` is a generic envelope; the blueprint requires Problem Details–compatible errors.
-4. PR-0 through PR-5 were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
+4. Foundation PRs were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
+5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
+
+## What PR-002 added
+
+- `docs/product/PRD.md` with buyer, scored entity, horizon, v1 use cases, metrics, SLOs, and a traceability table
+- Platform-wide default churn label and concrete leakage tests marked `BLOCKED`
+- Docs check requires the PRD headings
 
 ## What PR-5 added
 
@@ -52,24 +60,11 @@ Still open:
 - Canonical `./scripts/verify.sh` for docs, platform-service tests, package, and MongoDB/Redis tree ban
 - Does not run frozen `core-service` tests
 
-## What PR-2 added
-
-- JDBC, Flyway, and the PostgreSQL driver on `platform-service`
-- Testcontainers PostgreSQL tests
-- One bootstrap migration
-- MongoDB/Redis Enforcer rule kept
-
-## What PR-1 added
-
-- `/apps/platform-service` Spring Boot modular-monolith skeleton
-- Actuator `/actuator/health`
-- Maven Enforcer ban on MongoDB and Redis (direct and transitive)
-- No JPA, JDBC, or PostgreSQL driver
-
 ## Next session load list
 
 1. `AGENTS.md`
 2. this file
-3. `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
-4. `docs/architecture/context-map.md`
-5. `apps/platform-service` only, unless the task is about frozen modules
+3. `docs/product/PRD.md`
+4. `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
+5. `docs/architecture/context-map.md`
+6. `apps/platform-service` only, unless the task is about frozen modules

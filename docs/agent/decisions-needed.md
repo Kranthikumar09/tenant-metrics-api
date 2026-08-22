@@ -6,7 +6,9 @@ Record conflicts that a later ADR or explicit user instruction must resolve. Do 
 
 ### D-004 — Churn label and horizon
 
-The blueprint stop condition still applies: do not implement model training until the churn label, prediction horizon, scored entity, and leakage rules are approved. A later PRD PR should name these as explicit defaults or `BLOCKED` items, not invent customer facts.
+The blueprint stop condition still applies: do not implement model training until the churn label, prediction horizon, scored entity, and leakage rules are approved.
+
+`docs/product/PRD.md` now names scored entity (`ACCOUNT`) and prediction horizon (30 days) as defaults. The platform-wide default churn label and concrete leakage tests remain `BLOCKED`.
 
 ### D-005 — Branch naming
 

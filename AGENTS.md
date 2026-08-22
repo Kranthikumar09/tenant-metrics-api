@@ -18,8 +18,9 @@ Work on exactly one small pull request at a time.
 
 Approval is required once per PR, not for individual files, edits, safe local commands, or test runs.
 
-Do not begin implementation until the user replies `APPROVE PR-XXX`.
-Read-only inspection and planning are allowed before approval.
+Do not begin implementation until the user replies `APPROVE PR-XXX`, or until the current recommended PR is approved or merged on GitHub.
+
+After that signal, run a system query (`gh pr view` plus the cloud message queue). If the PR is approved or merged and no newer instruction is queued, implement the next recommended backlog PR. Read-only inspection and planning are allowed before approval.
 
 Do not attempt to build the entire product in one session or load the entire blueprint into working context for every task.
 
