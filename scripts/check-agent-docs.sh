@@ -127,6 +127,20 @@ forbid_text ".github/workflows/verify.yml" "aws-actions/"
 forbid_text ".github/workflows/verify.yml" "configure-aws-credentials"
 forbid_text ".github/workflows/verify.yml" "-pl core-service"
 
+require_file "docs/product/PRD.md"
+require_heading "docs/product/PRD.md" "## Buyer, user, and value"
+require_heading "docs/product/PRD.md" "## Scored entity"
+require_heading "docs/product/PRD.md" "## Churn label"
+require_heading "docs/product/PRD.md" "## Prediction horizon"
+require_heading "docs/product/PRD.md" "## v1 use cases"
+require_heading "docs/product/PRD.md" "## Non-goals"
+require_heading "docs/product/PRD.md" "## Activation metric"
+require_heading "docs/product/PRD.md" "## Model-value metric"
+require_heading "docs/product/PRD.md" "## SLO targets"
+require_heading "docs/product/PRD.md" "## Open decisions"
+require_heading "docs/product/PRD.md" "## Traceability"
+require_heading "docs/product/PRD.md" "BLOCKED"
+
 if [[ "${failures}" -gt 0 ]]; then
   echo
   echo "check-agent-docs: FAIL (${failures} missing required items)"
