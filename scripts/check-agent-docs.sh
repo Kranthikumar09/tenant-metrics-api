@@ -155,6 +155,20 @@ require_heading "docs/architecture/ADRs/ADR-template.md" "## Decision"
 require_heading "docs/architecture/ADRs/ADR-template.md" "## Consequences"
 require_heading "docs/architecture/ADRs/ADR-template.md" "Status:"
 
+require_file "docs/security/threat-model.md"
+require_heading "docs/security/threat-model.md" "## Trust boundaries"
+require_heading "docs/security/threat-model.md" "## Data flows"
+require_heading "docs/security/threat-model.md" "## STRIDE catalog"
+require_heading "docs/security/threat-model.md" "cross-tenant"
+require_heading "docs/security/threat-model.md" "forged tenant header"
+require_heading "docs/security/threat-model.md" "replay"
+require_heading "docs/security/threat-model.md" "webhook SSRF"
+require_heading "docs/security/threat-model.md" "resource exhaustion"
+require_heading "docs/security/threat-model.md" "prompt/data leakage"
+require_heading "docs/security/threat-model.md" "poisoned training data"
+require_heading "docs/security/threat-model.md" "BLOCKED"
+forbid_text "docs/security/threat-model.md" "ACCEPTED RISK"
+
 if [[ "${failures}" -gt 0 ]]; then
   echo
   echo "check-agent-docs: FAIL (${failures} missing required items)"
