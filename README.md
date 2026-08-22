@@ -32,6 +32,8 @@ Canonical verification:
 ./scripts/verify.sh
 ```
 
+GitHub Actions runs the same script on every push and pull request. The workflow does not deploy and does not use cloud credentials.
+
 Local PostgreSQL:
 
 ```bash

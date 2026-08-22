@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-4.
+Last updated after PR-5.
 
 ## Snapshot
 
 `/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged.
 
-- Branch: `cursor/pr-4-verify-script-9d98`
+- Branch: `cursor/pr-5-github-actions-verify-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
@@ -15,7 +15,7 @@ Last updated after PR-4.
 - Target modules: `/apps/platform-service` (skeleton), `/apps/worker` (not created), `/apps/console` (not created)
 - Frontend: none
 - Database migrations: `V1__platform_bootstrap.sql`
-- CI: none
+- CI: `.github/workflows/verify.yml` runs `./scripts/verify.sh`
 - Canonical verify command: `./scripts/verify.sh`
 
 ## Repository maturity
@@ -28,6 +28,7 @@ Last updated after PR-4.
 | Persistence | Flyway `V1__platform_bootstrap.sql` in `platform-service`; legacy `core-service` still declares JPA/MongoDB |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL only |
+| CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
 | Angular console | none |
 
 ## Known contradictions
@@ -37,7 +38,19 @@ Still open:
 1. MongoDB and Redis remain installed/declared on frozen legacy modules. Removal requires a later PR that lists exact files and is approved.
 2. `core-service` uses package `com.tenatmetrics`; other modules use `com.tenantmetrics`.
 3. `ApiResponse` is a generic envelope; the blueprint requires Problem Details–compatible errors.
-4. PR-0 and PR-0.1 were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 until that stack is merged there.
+4. PR-0 through PR-5 were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
+
+## What PR-5 added
+
+- `.github/workflows/verify.yml` runs `./scripts/verify.sh` on push and pull request
+- Workflow permissions are `contents: read` only
+- Actions are pinned by commit SHA
+- No deploy job and no cloud credentials
+
+## What PR-4 added
+
+- Canonical `./scripts/verify.sh` for docs, platform-service tests, package, and MongoDB/Redis tree ban
+- Does not run frozen `core-service` tests
 
 ## What PR-2 added
 
