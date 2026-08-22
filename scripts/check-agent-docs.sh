@@ -108,6 +108,11 @@ forbid_text "AGENTS.md" "Do not provision or introduce the following during the 
 require_heading "docs/architecture/context-map.md" "must not build on the frozen modules"
 require_heading "docs/architecture/context-map.md" "frozen legacy modules"
 
+require_file "docker-compose.yml"
+require_heading "docker-compose.yml" "postgres:16-alpine"
+forbid_text "docker-compose.yml" "mongo"
+forbid_text "docker-compose.yml" "redis"
+
 if [[ "${failures}" -gt 0 ]]; then
   echo
   echo "check-agent-docs: FAIL (${failures} missing required items)"

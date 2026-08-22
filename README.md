@@ -26,8 +26,17 @@ Start here:
 
 ## Verification
 
-Until a canonical `./scripts/verify.sh` exists, PR-001 validation is:
+Until a canonical `./scripts/verify.sh` exists, applicable validation is:
 
 ```bash
 ./scripts/check-agent-docs.sh
+./mvnw -ntp -pl apps/platform-service -am test
 ```
+
+Local PostgreSQL:
+
+```bash
+docker compose up -d postgres
+```
+
+Then run `platform-service` with `--spring.profiles.active=local`.

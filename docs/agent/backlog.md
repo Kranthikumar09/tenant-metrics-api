@@ -4,12 +4,12 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-3 — Add Docker Compose for local PostgreSQL**
+**PR-4 — Add canonical `./scripts/verify.sh`**
 
 - Capacity: XS
-- Why next: local `spring-boot:run` still has no database
-- Main dependency: PR-2
-- Out of scope: Redis, MongoDB, LocalStack, frozen modules
+- Why next: there is still no single verification command
+- Main dependency: PR-2 and PR-3
+- Out of scope: running or hiding the pre-existing `core-service` failure
 
 ## Later candidates
 
@@ -30,7 +30,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-0 | ADR-001 MVP architecture and current context map | implemented |
 | PR-0.1 | Align `AGENTS.md` and architecture docs with ADR-001 | implemented |
 | PR-1 | `/apps/platform-service` skeleton without MongoDB, Redis, or PostgreSQL | implemented |
-| PR-2 | PostgreSQL JDBC, Flyway, and Testcontainers for platform-service | implemented in this branch |
+| PR-2 | PostgreSQL JDBC, Flyway, and Testcontainers for platform-service | implemented |
+| PR-3 | Docker Compose for local PostgreSQL only | implemented in this branch |
 
 ## Intentionally not scheduled
 
