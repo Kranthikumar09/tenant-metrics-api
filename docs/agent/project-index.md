@@ -19,7 +19,7 @@ Load a section only when the current PR needs it. Status values are `implemented
 | SaaS control plane | Onboarding, RBAC, entitlements, usage, billing, console, supportability. | no control-plane module yet | pending |
 | AI-assisted development rules | One bounded change, persistent context pack, human review of architecture and security. | `AGENTS.md`, `docs/agent/` | implemented |
 | Repository and deployment shape | Intended layout is `apps/platform-service`, `apps/worker`, `apps/console`, contracts, docs, and tests. | `apps/platform-service` skeleton exists; worker and console do not | pending |
-| Milestone 0 — product contract | PRD, context map, data classification, ADR template, threat model. No application code. | `docs/product/PRD.md` and context map exist; `docs/security/` and ADR template do not | pending |
+| Milestone 0 — product contract | PRD, context map, data classification, ADR template, threat model. No application code. | PRD, context map, data classification, and ADR template exist; threat model does not | pending |
 | Milestone 1 — repo, local env, CI | Buildable modular monolith, Compose, Testcontainers, canonical verify, CI. | Testcontainers, Compose, `./scripts/verify.sh`, and GitHub Actions verify workflow exist | implemented |
 | Milestone 2 — identity and tenancy | OIDC, API keys, immutable TenantContext, RBAC, audit, tenant-scoped schema. | none | pending |
 | Milestone 3 — contract-first ingestion | OpenAPI plus idempotent `POST /v1/events:batch`. | none | pending |

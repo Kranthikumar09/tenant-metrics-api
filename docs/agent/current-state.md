@@ -1,14 +1,16 @@
 # Current state
 
-Last updated after PR-002.
+Last updated after PR-004.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged. The Milestone 0 product contract is `docs/product/PRD.md`.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged. The Milestone 0 product contract and data classification exist. The threat model does not.
 
-- Branch: `cursor/pr-002-product-prd-9d98`
+- Branch: `cursor/pr-004-data-classification-adr-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
+- ADR template: `docs/architecture/ADRs/ADR-template.md`
 - Product contract: `docs/product/PRD.md`
+- Data classification: `docs/security/data-classification.md`
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
 - Build: Maven wrapper, Spring Boot 4.1.1 parent, Spring Cloud 2025.1.2 BOM
@@ -23,7 +25,7 @@ Last updated after PR-002.
 
 | Area | State |
 | --- | --- |
-| Product docs | ADR-001 and `docs/product/PRD.md` exist; threat model, data classification, and OpenAPI do not |
+| Product docs | ADR-001, PRD, data classification, and ADR template exist; threat model and OpenAPI do not |
 | Backend | `platform-service` with Actuator, JDBC, and Flyway; legacy modules still empty scaffolds |
 | Tests | context, `/actuator/health`, and PostgreSQL bootstrap query via Testcontainers |
 | Persistence | Flyway `V1__platform_bootstrap.sql` in `platform-service`; legacy `core-service` still declares JPA/MongoDB |
@@ -42,29 +44,23 @@ Still open:
 4. Foundation PRs were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
 5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 
+## What PR-004 added
+
+- `docs/security/data-classification.md` with allowed classes, forbidden data, and `BLOCKED` retention/DPA items
+- `docs/architecture/ADRs/ADR-template.md`
+- Docs check requires both files and forbids invented PCI/HIPAA claims
+
 ## What PR-002 added
 
 - `docs/product/PRD.md` with buyer, scored entity, horizon, v1 use cases, metrics, SLOs, and a traceability table
 - Platform-wide default churn label and concrete leakage tests marked `BLOCKED`
-- Docs check requires the PRD headings
-
-## What PR-5 added
-
-- `.github/workflows/verify.yml` runs `./scripts/verify.sh` on push and pull request
-- Workflow permissions are `contents: read` only
-- Actions are pinned by commit SHA
-- No deploy job and no cloud credentials
-
-## What PR-4 added
-
-- Canonical `./scripts/verify.sh` for docs, platform-service tests, package, and MongoDB/Redis tree ban
-- Does not run frozen `core-service` tests
 
 ## Next session load list
 
 1. `AGENTS.md`
 2. this file
 3. `docs/product/PRD.md`
-4. `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
-5. `docs/architecture/context-map.md`
-6. `apps/platform-service` only, unless the task is about frozen modules
+4. `docs/security/data-classification.md`
+5. `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
+6. `docs/architecture/context-map.md`
+7. `apps/platform-service` only, unless the task is about frozen modules
