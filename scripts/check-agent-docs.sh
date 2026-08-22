@@ -113,6 +113,11 @@ require_heading "docker-compose.yml" "postgres:16-alpine"
 forbid_text "docker-compose.yml" "mongo"
 forbid_text "docker-compose.yml" "redis"
 
+require_file "scripts/verify.sh"
+require_heading "scripts/verify.sh" "apps/platform-service"
+require_heading "scripts/verify.sh" "check-agent-docs.sh"
+forbid_text "scripts/verify.sh" "-pl core-service"
+
 if [[ "${failures}" -gt 0 ]]; then
   echo
   echo "check-agent-docs: FAIL (${failures} missing required items)"

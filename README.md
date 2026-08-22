@@ -26,11 +26,10 @@ Start here:
 
 ## Verification
 
-Until a canonical `./scripts/verify.sh` exists, applicable validation is:
+Canonical verification:
 
 ```bash
-./scripts/check-agent-docs.sh
-./mvnw -ntp -pl apps/platform-service -am test
+./scripts/verify.sh
 ```
 
 Local PostgreSQL:

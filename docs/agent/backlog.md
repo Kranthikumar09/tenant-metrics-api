@@ -4,12 +4,12 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-4 — Add canonical `./scripts/verify.sh`**
+**PR-5 — Add GitHub Actions CI for `./scripts/verify.sh`**
 
-- Capacity: XS
-- Why next: there is still no single verification command
-- Main dependency: PR-2 and PR-3
-- Out of scope: running or hiding the pre-existing `core-service` failure
+- Capacity: S
+- Why next: verify.sh exists but is not yet run on every push
+- Main dependency: PR-4
+- Out of scope: deploying, cloud credentials, fixing frozen `core-service`
 
 ## Later candidates
 
@@ -31,7 +31,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-0.1 | Align `AGENTS.md` and architecture docs with ADR-001 | implemented |
 | PR-1 | `/apps/platform-service` skeleton without MongoDB, Redis, or PostgreSQL | implemented |
 | PR-2 | PostgreSQL JDBC, Flyway, and Testcontainers for platform-service | implemented |
-| PR-3 | Docker Compose for local PostgreSQL only | implemented in this branch |
+| PR-3 | Docker Compose for local PostgreSQL only | implemented |
+| PR-4 | Canonical `./scripts/verify.sh` | implemented in this branch |
 
 ## Intentionally not scheduled
 

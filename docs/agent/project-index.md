@@ -20,7 +20,7 @@ Load a section only when the current PR needs it. Status values are `implemented
 | AI-assisted development rules | One bounded change, persistent context pack, human review of architecture and security. | `AGENTS.md`, `docs/agent/` | implemented |
 | Repository and deployment shape | Intended layout is `apps/platform-service`, `apps/worker`, `apps/console`, contracts, docs, and tests. | `apps/platform-service` skeleton exists; worker and console do not | pending |
 | Milestone 0 — product contract | PRD, context map, data classification, ADR template, threat model. No application code. | `docs/product/`, `docs/security/` (missing) | pending |
-| Milestone 1 — repo, local env, CI | Buildable modular monolith, Compose, Testcontainers, canonical verify, CI. | `apps/platform-service` has Testcontainers PostgreSQL; Compose/CI still missing | pending |
+| Milestone 1 — repo, local env, CI | Buildable modular monolith, Compose, Testcontainers, canonical verify, CI. | Testcontainers, Compose, and `./scripts/verify.sh` exist; GitHub Actions CI still missing | pending |
 | Milestone 2 — identity and tenancy | OIDC, API keys, immutable TenantContext, RBAC, audit, tenant-scoped schema. | none | pending |
 | Milestone 3 — contract-first ingestion | OpenAPI plus idempotent `POST /v1/events:batch`. | none | pending |
 | Milestone 4 — durable event processing | Tenant-scoped event persistence and replay. Local SQS/S3 or LocalStack approved by ADR-001. | none | pending |
