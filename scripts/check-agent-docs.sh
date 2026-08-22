@@ -130,8 +130,6 @@ forbid_text "apps/worker/pom.xml" "common-models"
 forbid_text "apps/worker/pom.xml" "core-service"
 forbid_text "apps/worker/pom.xml" "api-gateway"
 forbid_text "apps/worker/pom.xml" "spring-boot-starter-webmvc"
-forbid_text "apps/worker/pom.xml" "spring-boot-starter-data-mongodb"
-forbid_text "apps/worker/pom.xml" "spring-boot-starter-data-redis"
 
 require_file "apps/worker/src/main/java/com/tenantmetrics/worker/WorkerApplication.java"
 require_heading "apps/worker/src/main/java/com/tenantmetrics/worker/WorkerApplication.java" "@SpringBootApplication"

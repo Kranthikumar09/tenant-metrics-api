@@ -4,18 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-009 — `/apps/worker` same-version process skeleton**
+**PR-010 — Identity and immutable TenantContext**
 
 - Capacity: S
-- Why next: Local queues exist; the approved worker process does not
-- Main dependency: ADR-001, PR-1
-- Out of scope: microservice extraction, Redis, MongoDB, Bedrock, real AWS accounts
+- Why next: Worker and platform skeletons exist; tenant isolation is the next security-critical behavior
+- Main dependency: PR-005, PRD
+- Out of scope: full OIDC provider, console, scoring, Redis, MongoDB
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-010 | Identity and immutable TenantContext | S | PR-005, PRD | Must implement forged-header and cross-tenant tests |
+| PR-011 | Contract-first OpenAPI and `POST /v1/events:batch` | S | PR-010 | Idempotent ingestion |
 
 ## Completed
 
@@ -32,7 +32,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-002 | Milestone 0 product contract (`docs/product/PRD.md`) | implemented |
 | PR-004 | Data classification and ADR template | implemented |
 | PR-005 | STRIDE threat model | implemented |
-| PR-007 | LocalStack-compatible SQS/S3 on Compose | implemented in this branch |
+| PR-007 | LocalStack-compatible SQS/S3 on Compose | implemented |
+| PR-009 | `/apps/worker` same-version process skeleton | implemented in this branch |
 
 ## Intentionally not scheduled
 

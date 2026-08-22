@@ -25,6 +25,7 @@
 		<module>core-service</module>
 		<module>api-gateway</module>
 		<module>apps/platform-service</module>
+		<module>apps/worker</module>
 	</modules>
 
 	<properties>

@@ -12,14 +12,14 @@ Short map of what exists today versus the target locked by `ADR-001`. This is no
 | `core-service` | Empty Spring Boot web app with JPA, PostgreSQL driver, and MongoDB starters | Frozen legacy module. Do not treat as `apps/worker` or `platform-service`. |
 | `api-gateway` | Empty Spring Cloud Gateway app | Frozen legacy module. Do not treat as the public monolith. |
 
-`/apps/platform-service` boots with JDBC and Flyway against Testcontainers PostgreSQL. Local Compose provides PostgreSQL and LocalStack SQS/S3. There is no `/apps/worker` or `/apps/console`.
+`/apps/platform-service` boots with JDBC and Flyway against Testcontainers PostgreSQL. `/apps/worker` boots as a non-web same-version process. Local Compose provides PostgreSQL and LocalStack SQS/S3. There is no `/apps/console`.
 
 ## Target modules
 
 | Path | Role | Status |
 | --- | --- | --- |
 | `/apps/platform-service` | Spring Boot modular monolith | JDBC + Flyway + Testcontainers PostgreSQL |
-| `/apps/worker` | Same-version background processor | pending |
+| `/apps/worker` | Same-version background processor | non-web Spring Boot skeleton |
 | `/apps/console` | Angular application | pending |
 
 PostgreSQL is the only approved primary database. Local queues and object storage may use SQS/S3 or LocalStack-compatible substitutes. MongoDB is not approved. Redis is not approved unless a later ADR says so.
