@@ -1,14 +1,16 @@
 # Current architecture context
 
-Short map of what exists today versus the target locked by `ADR-001`. This is not a full system design.
+Short map of what exists today versus the target locked by `ADR-001`. This is not a full system design. `AGENTS.md`, this file, and ADR-001 must agree: ADR-001 is the approved architecture contract.
 
 ## Current modules
 
+`api-gateway`, `core-service`, and `common-models` are frozen legacy modules. New implementation must not build on the frozen modules.
+
 | Module | Role today | Allowed to change in feature PRs? |
 | --- | --- | --- |
-| `common-models` | Shared DTO jar (`TenantDto`, `ApiResponse`) | Freeze. Do not treat as `apps/console`. |
-| `core-service` | Empty Spring Boot web app with JPA, PostgreSQL driver, and MongoDB starters | Freeze. Do not treat as `apps/worker` or `platform-service`. |
-| `api-gateway` | Empty Spring Cloud Gateway app | Freeze. Do not treat as the public monolith. |
+| `common-models` | Shared DTO jar (`TenantDto`, `ApiResponse`) | Frozen legacy module. Do not treat as `apps/console`. |
+| `core-service` | Empty Spring Boot web app with JPA, PostgreSQL driver, and MongoDB starters | Frozen legacy module. Do not treat as `apps/worker` or `platform-service`. |
+| `api-gateway` | Empty Spring Cloud Gateway app | Frozen legacy module. Do not treat as the public monolith. |
 
 There is no `/apps` directory, no Docker Compose, no Angular workspace, and no LocalStack configuration.
 
@@ -24,11 +26,11 @@ PostgreSQL is the only approved primary database. Local queues and object storag
 
 ## Freeze
 
-Do not delete, move, or strip dependencies from `api-gateway`, `core-service`, or `common-models` until a later PR lists the exact files and is approved.
+Do not delete, move, or strip dependencies from `api-gateway`, `core-service`, or `common-models` until a later PR lists the exact files and is approved. MongoDB and Redis removal from legacy modules requires separate approval.
 
-Do not add new MongoDB or Redis usage.
+New modules must not introduce MongoDB or Redis.
 
-New work goes into the target `apps/` modules after those modules exist.
+New work goes into the target `apps/` modules after those modules exist. New implementation must not build on the frozen modules.
 
 ## Dependency direction
 

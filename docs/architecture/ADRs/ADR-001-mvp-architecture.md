@@ -33,8 +33,9 @@ Existing `api-gateway`, `core-service`, and `common-models` are frozen placehold
 ## Consequences
 
 - New feature code belongs in the approved `apps/` layout, created by later PRs.
+- New implementation must not build on the frozen modules.
 - Provider interfaces should wrap queues, object storage, authentication, and explanations so LocalStack-compatible local substitutes can be replaced later.
-- `AGENTS.md` still contains the older forbid-list for SQS, S3, and worker infrastructure. Until that file is updated in a later approved docs PR, this ADR and the latest explicit user instruction take precedence for those items.
+- `AGENTS.md` and `docs/architecture/context-map.md` must stay consistent with this ADR. SQS, S3, and `/apps/worker` are approved here; they are not forbidden.
 - This ADR does not add Docker Compose, LocalStack, or application modules.
 
 ## Non-goals

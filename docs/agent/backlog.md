@@ -16,7 +16,6 @@ Small PRs only. Do not implement the next item until it is approved.
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
 | PR-002 | Create the Milestone 0 product contract (`docs/product/PRD.md`) | S | PR-001 docs | Product defaults; mark unresolved items BLOCKED |
-| PR-1a | Align `AGENTS.md` cost-optimized MVP section with ADR-001 | XS | PR-0 | Removes the stale forbid-list for local SQS/S3 and worker |
 | PR-004 | Data classification and ADR template | XS | PR-002 | Remaining M0 product-pack item |
 | PR-005 | Threat model | S | PR-004 | Remaining M0 exit gate |
 | PR-006 | Canonical `./scripts/verify.sh` | S | PR-001 | Establish the verification pipeline before feature work |
@@ -28,7 +27,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | ID | Title | Status |
 | --- | --- | --- |
 | PR-001 | Agent operating system and repository working memory | implemented |
-| PR-0 | ADR-001 MVP architecture and current context map | implemented in this branch |
+| PR-0 | ADR-001 MVP architecture and current context map | implemented |
+| PR-0.1 | Align `AGENTS.md` and architecture docs with ADR-001 | implemented in this branch |
 
 ## Intentionally not scheduled
 

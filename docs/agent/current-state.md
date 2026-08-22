@@ -1,13 +1,13 @@
 # Current state
 
-Last updated after PR-0.
+Last updated after PR-0.1.
 
 ## Snapshot
 
 The repository is a greenfield Maven reactor with documentation memory and an accepted MVP architecture ADR. No customer-facing churn behavior exists. Target `apps/` modules do not exist yet.
 
-- Branch: `cursor/pr-0-adr-001-mvp-architecture-9d98`
-- Draft PR: https://github.com/Kranthikumar09/tenant-metrics-api/pull/3
+- Branch: `cursor/pr-0-1-agents-adr-consistency-9d98`
+- Draft PR: https://github.com/Kranthikumar09/tenant-metrics-api/pull/4
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
@@ -40,16 +40,22 @@ Resolved by ADR-001:
 
 Still open:
 
-1. `AGENTS.md` still forbids SQS, S3, and a separate worker. ADR-001 and the latest user instruction take precedence until a later docs PR updates `AGENTS.md`.
-2. MongoDB and Redis remain installed/declared. Removal requires a later PR that lists exact files and is approved.
-3. `core-service` uses package `com.tenatmetrics`; other modules use `com.tenantmetrics`.
-4. `ApiResponse` is a generic envelope; the blueprint requires Problem Details–compatible errors.
+1. MongoDB and Redis remain installed/declared on frozen legacy modules. Removal requires a later PR that lists exact files and is approved.
+2. `core-service` uses package `com.tenatmetrics`; other modules use `com.tenantmetrics`.
+3. `ApiResponse` is a generic envelope; the blueprint requires Problem Details–compatible errors.
+
+`AGENTS.md`, ADR-001, and this file now agree that SQS, S3, and `/apps/worker` are approved.
 
 ## What PR-0 added
 
 - `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
 - `docs/architecture/context-map.md`
 - Docs-check coverage for those files
+
+## What PR-0.1 added
+
+- `AGENTS.md` now matches ADR-001
+- Context map and current-state no longer contradict the approved worker/SQS/S3 baseline
 
 ## Next session load list
 
