@@ -4,19 +4,19 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-005 — Threat model**
+**PR-007 — LocalStack-compatible SQS/S3 on Compose**
 
 - Capacity: S
-- Why next: PRD, classification, and ADR template exist; Milestone 0 still needs a STRIDE threat model
-- Main dependency: PR-004
-- Out of scope: application code, OpenAPI, scoring, LocalStack
+- Why next: Milestone 0 docs are in place; ADR-001 already approved local queues and object storage
+- Main dependency: ADR-001, PR-3
+- Out of scope: Redis, MongoDB, real AWS accounts, worker application code
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-007 | LocalStack-compatible SQS/S3 on Compose | S | ADR-001, PR-3 | Do not add Redis or MongoDB |
 | PR-009 | `/apps/worker` same-version process skeleton | S | ADR-001, PR-1 | Not a microservice extraction |
+| PR-010 | Identity and immutable TenantContext | S | PR-005, PRD | Must implement forged-header and cross-tenant tests |
 
 ## Completed
 
@@ -31,7 +31,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-4 | Canonical `./scripts/verify.sh` | implemented |
 | PR-5 | GitHub Actions CI for `./scripts/verify.sh` | implemented |
 | PR-002 | Milestone 0 product contract (`docs/product/PRD.md`) | implemented |
-| PR-004 | Data classification and ADR template | implemented in this branch |
+| PR-004 | Data classification and ADR template | implemented |
+| PR-005 | STRIDE threat model | implemented in this branch |
 
 ## Intentionally not scheduled
 

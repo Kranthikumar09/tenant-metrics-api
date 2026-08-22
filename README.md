@@ -21,6 +21,7 @@ Start here:
 - `AGENTS.md` — operating model, MVP baseline, TDD, and stop conditions
 - `docs/product/PRD.md` — Milestone 0 product contract and BLOCKED items
 - `docs/security/data-classification.md` — allowed and forbidden data classes
+- `docs/security/threat-model.md` — STRIDE catalog and required abuse scenarios
 - `docs/architecture/ADRs/ADR-template.md` — format for later ADRs
 - `docs/agent/current-state.md` — what exists now
 - `docs/agent/project-index.md` — compact blueprint map
