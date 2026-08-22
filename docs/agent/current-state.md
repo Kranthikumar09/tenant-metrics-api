@@ -7,6 +7,7 @@ Last updated after PR-0.
 The repository is a greenfield Maven reactor with documentation memory and an accepted MVP architecture ADR. No customer-facing churn behavior exists. Target `apps/` modules do not exist yet.
 
 - Branch: `cursor/pr-0-adr-001-mvp-architecture-9d98`
+- Draft PR: https://github.com/Kranthikumar09/tenant-metrics-api/pull/3
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
