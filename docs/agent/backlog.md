@@ -4,18 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-007 — LocalStack-compatible SQS/S3 on Compose**
+**PR-009 — `/apps/worker` same-version process skeleton**
 
 - Capacity: S
-- Why next: Milestone 0 docs are in place; ADR-001 already approved local queues and object storage
-- Main dependency: ADR-001, PR-3
-- Out of scope: Redis, MongoDB, real AWS accounts, worker application code
+- Why next: Local queues exist; the approved worker process does not
+- Main dependency: ADR-001, PR-1
+- Out of scope: microservice extraction, Redis, MongoDB, Bedrock, real AWS accounts
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-009 | `/apps/worker` same-version process skeleton | S | ADR-001, PR-1 | Not a microservice extraction |
 | PR-010 | Identity and immutable TenantContext | S | PR-005, PRD | Must implement forged-header and cross-tenant tests |
 
 ## Completed
@@ -32,7 +31,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-5 | GitHub Actions CI for `./scripts/verify.sh` | implemented |
 | PR-002 | Milestone 0 product contract (`docs/product/PRD.md`) | implemented |
 | PR-004 | Data classification and ADR template | implemented |
-| PR-005 | STRIDE threat model | implemented in this branch |
+| PR-005 | STRIDE threat model | implemented |
+| PR-007 | LocalStack-compatible SQS/S3 on Compose | implemented in this branch |
 
 ## Intentionally not scheduled
 
