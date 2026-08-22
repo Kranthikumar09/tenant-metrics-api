@@ -25,8 +25,10 @@ sudo apt-get install -y -qq \
   redis-server \
   mongodb-org
 
-# --- Warm the Maven dependency cache and produce runnable jars for both services ---
-( cd api-gateway && ./mvnw -B -ntp -DskipTests package )
-( cd core-service && ./mvnw -B -ntp -DskipTests package )
+# --- Build the multi-module reactor ---
+# Runs from the parent POM so common-models is installed into the local Maven
+# repository, making it resolvable when each service is later run on its own
+# via spring-boot:run.
+./mvnw -B -ntp -DskipTests install
 
-echo "install.sh complete: databases installed, both services built."
+echo "install.sh complete: databases installed, reactor (common-models, core-service, api-gateway) built."
