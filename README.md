@@ -38,10 +38,10 @@ Canonical verification:
 
 GitHub Actions runs the same script on every push and pull request. The workflow does not deploy and does not use cloud credentials.
 
-Local PostgreSQL:
+Local PostgreSQL and LocalStack (SQS/S3 only):
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres localstack
 ```
 
-Then run `platform-service` with `--spring.profiles.active=local`.
+Then run `platform-service` with `--spring.profiles.active=local`. LocalStack listens on `http://localhost:4566`. Do not put AWS keys in Compose; this stack is a local substitute only.

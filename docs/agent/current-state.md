@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-005.
+Last updated after PR-007.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged. Milestone 0 docs now include the PRD, data classification, ADR template, and a STRIDE threat model. Identity and ingestion code do not exist.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, and Testcontainers PostgreSQL tests. It has no MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose now starts PostgreSQL and LocalStack SQS/S3. Identity and ingestion code do not exist.
 
-- Branch: `cursor/pr-005-threat-model-9d98`
+- Branch: `cursor/pr-007-localstack-compose-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - ADR template: `docs/architecture/ADRs/ADR-template.md`
 - Product contract: `docs/product/PRD.md`
@@ -31,7 +31,7 @@ Last updated after PR-005.
 | Tests | context, `/actuator/health`, and PostgreSQL bootstrap query via Testcontainers |
 | Persistence | Flyway `V1__platform_bootstrap.sql` in `platform-service`; legacy `core-service` still declares JPA/MongoDB |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
-| Docker / Compose | `docker-compose.yml` starts PostgreSQL only |
+| Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
 | Angular console | none |
 
@@ -46,23 +46,23 @@ Still open:
 5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 6. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
 
+## What PR-007 added
+
+- LocalStack service on `docker-compose.yml` with `SERVICES: sqs,s3` only
+- No AWS keys, Redis, or MongoDB in Compose
+- Docs check requires LocalStack and forbids AWS key env vars
+
 ## What PR-005 added
 
-- `docs/security/threat-model.md` STRIDE catalog for approved and planned surfaces
-- Required scenarios: cross-tenant, forged tenant header, replay, webhook SSRF, resource exhaustion, prompt/data leakage, poisoned training data
-- Residual risk stays Open or `BLOCKED`; acceptance is not recorded here
-
-## What PR-004 added
-
-- `docs/security/data-classification.md` and `docs/architecture/ADRs/ADR-template.md`
+- `docs/security/threat-model.md` STRIDE catalog
 
 ## Next session load list
 
 1. `AGENTS.md`
 2. this file
 3. `docs/product/PRD.md`
-4. `docs/security/data-classification.md`
-5. `docs/security/threat-model.md`
-6. `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
-7. `docs/architecture/context-map.md`
+4. `docs/security/threat-model.md`
+5. `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
+6. `docs/architecture/context-map.md`
+7. `docker-compose.yml`
 8. `apps/platform-service` only, unless the task is about frozen modules

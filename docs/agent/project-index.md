@@ -23,7 +23,7 @@ Load a section only when the current PR needs it. Status values are `implemented
 | Milestone 1 — repo, local env, CI | Buildable modular monolith, Compose, Testcontainers, canonical verify, CI. | Testcontainers, Compose, `./scripts/verify.sh`, and GitHub Actions verify workflow exist | implemented |
 | Milestone 2 — identity and tenancy | OIDC, API keys, immutable TenantContext, RBAC, audit, tenant-scoped schema. | none | pending |
 | Milestone 3 — contract-first ingestion | OpenAPI plus idempotent `POST /v1/events:batch`. | none | pending |
-| Milestone 4 — durable event processing | Tenant-scoped event persistence and replay. Local SQS/S3 or LocalStack approved by ADR-001. | none | pending |
+| Milestone 4 — durable event processing | Tenant-scoped event persistence and replay. Local SQS/S3 or LocalStack approved by ADR-001. | LocalStack SQS/S3 in Compose; worker and persistence do not exist | pending |
 | Milestone 5 — features and rules score | Versioned features and cold-start rules scoring with history. | none | pending |
 | Milestone 6 — prediction API and console | Tenant-safe prediction reads and Angular onboarding/risk console. | no `apps/console` | pending |
 | Milestone 7 — webhook reliability | Outbox, signing, retry, DLQ, replay. | none | pending |
