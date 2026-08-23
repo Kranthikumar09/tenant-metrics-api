@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.tenantmetrics.platform.events.AcceptedEventOutboxDispatcher;
@@ -32,6 +34,11 @@ class EventEnqueueTests extends AbstractPlatformPostgresTest {
 
 	private static final String TENANT_A_KEY = "tenant-a-test-key";
 	private static final String TENANT_B_KEY = "tenant-b-test-key";
+
+	@DynamicPropertySource
+	static void delayScheduledOutboxDispatch(DynamicPropertyRegistry registry) {
+		registry.add("platform.events.outbox.initial-delay-ms", () -> "600000");
+	}
 
 	@Autowired
 	private MockMvc mockMvc;

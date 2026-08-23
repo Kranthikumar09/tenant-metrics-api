@@ -33,6 +33,5 @@ abstract class AbstractPlatformPostgresTest {
 		registry.add("platform.events.queue.name", () -> "accepted-events");
 		registry.add("platform.events.queue.access-key", LOCALSTACK::getAccessKey);
 		registry.add("platform.events.queue.secret-key", LOCALSTACK::getSecretKey);
-		registry.add("platform.events.outbox.initial-delay-ms", () -> "600000");
 	}
 }
