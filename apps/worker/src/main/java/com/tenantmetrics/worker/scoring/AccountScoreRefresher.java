@@ -22,18 +22,19 @@ public class AccountScoreRefresher {
 		this.rulesBaselineScorer = rulesBaselineScorer;
 	}
 
-	public void refresh(String tenantId, String eventId) {
+	public boolean refresh(String tenantId, String eventId) {
 		JdbcTemplate jdbcTemplate = jdbcTemplates.getIfAvailable();
 		if (jdbcTemplate == null) {
-			return;
+			return false;
 		}
 		AccountScoreStore store = new AccountScoreStore(jdbcTemplate);
 		Optional<AccountEvent> event = store.findEvent(tenantId, eventId);
 		if (event.isEmpty()) {
-			return;
+			return false;
 		}
 		String accountExternalId = event.get().accountExternalId();
 		List<AccountEvent> events = store.loadEvents(tenantId, accountExternalId);
 		store.upsert(rulesBaselineScorer.score(tenantId, accountExternalId, events, Instant.now()));
+		return true;
 	}
 }

@@ -15,7 +15,7 @@ class TenantTaggedEventHandler {
 			return new ConsumeResult(false, bodyTenantId, eventId, "mismatched_tenant");
 		}
 		if (isBlank(eventId)) {
-			return new ConsumeResult(false, bodyTenantId, eventId, "missing_tenant");
+			return new ConsumeResult(false, bodyTenantId, eventId, "missing_event");
 		}
 		return new ConsumeResult(true, bodyTenantId, eventId, null);
 	}
