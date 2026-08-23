@@ -144,6 +144,14 @@ require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/
 require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/TenantIsolationTests.java" "X-Tenant-ID"
 forbid_text "apps/platform-service/src/main/java/com/tenantmetrics/platform/tenancy/TenantResolutionFilter.java" "X-Tenant-ID"
 
+require_file "contracts/openapi/churn-api.yaml"
+require_heading "contracts/openapi/churn-api.yaml" "/v1/events:batch"
+require_heading "contracts/openapi/churn-api.yaml" "event_id"
+require_heading "contracts/openapi/churn-api.yaml" "Idempotency-Key"
+require_heading "contracts/openapi/churn-api.yaml" "500"
+require_file "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventBatchTests.java"
+require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventBatchTests.java" "/v1/events:batch"
+
 require_file ".github/workflows/verify.yml"
 require_heading ".github/workflows/verify.yml" "./scripts/verify.sh"
 require_heading ".github/workflows/verify.yml" "contents: read"
