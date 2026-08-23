@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-025R — PostgreSQL browser-session and CSRF foundation.
+Last updated after PR-026R — server-side tenant membership resolution.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Browser test principals and machine API keys resolve to the same immutable TenantContext; production OIDC is not connected yet. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Browser identities resolve by exact OIDC issuer and subject to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed. Production OIDC is not connected yet. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-025r-browser-session-csrf-9d98`
+- Branch: `cursor/pr-026r-tenant-membership-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Browser session decision: `docs/architecture/ADRs/ADR-002-console-browser-session.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
@@ -15,9 +15,9 @@ Last updated after PR-025R — PostgreSQL browser-session and CSRF foundation.
 - Language: Java 21
 - Build: Maven wrapper, Spring Boot 4.1.1 parent, Spring Cloud 2025.1.2 BOM
 - Frozen legacy modules: `common-models`, `core-service`, `api-gateway`
-- Target modules: `/apps/platform-service` (skeleton), `/apps/worker` (skeleton), `/apps/console` (onboarding/risk shell)
+- Target modules: `/apps/platform-service` (active modular monolith), `/apps/worker` (active queue consumer), `/apps/console` (onboarding/risk shell)
 - Frontend: Angular console skeleton
-- Database migrations: `V1__platform_bootstrap.sql`, `V2__tenant_scoped_events.sql`, `V3__account_scores.sql`, `V4__accepted_event_outbox.sql`, `V5__browser_sessions.sql`
+- Database migrations: `V1__platform_bootstrap.sql`, `V2__tenant_scoped_events.sql`, `V3__account_scores.sql`, `V4__accepted_event_outbox.sql`, `V5__browser_sessions.sql`, `V6__tenant_memberships.sql`
 - CI: `.github/workflows/verify.yml` runs `./scripts/verify.sh`
 - Canonical verify command: `./scripts/verify.sh`
 
@@ -26,9 +26,9 @@ Last updated after PR-025R — PostgreSQL browser-session and CSRF foundation.
 | Area | State |
 | --- | --- |
 | Product docs | ADR-001, ADR-002, PRD, data classification, ADR template, threat model, events:batch, and cursor-paginated prediction-read OpenAPI exist |
-| Backend | `platform-service` with Actuator, JDBC, Flyway, PostgreSQL Spring Session, browser CSRF, API-key/session TenantContext, tenant-scoped event persistence, transactional outbox delivery to SQS, shared `RULES_BASELINE` scores, and cursor-paginated prediction reads; `worker` retains valid messages until their persisted event can be scored and permanently rejects invalid tenant tags |
-| Tests | platform-service context, health, PostgreSQL bootstrap, browser-session cookie/persistence/CSRF, tenant-isolation, event-batch, persistence, transactional-outbox enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, bounded DLQ redrive, successful-delete, and rescore tests; console onboarding/risk contract tests |
-| Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, V3 `account_scores`, V4 `accepted_event_outbox`, and V5 Spring Session tables; worker uses the same PostgreSQL store without owning Flyway |
+| Backend | `platform-service` with Actuator, JDBC, Flyway, PostgreSQL Spring Session, browser CSRF, enabled-membership resolution, API-key/session TenantContext, tenant-scoped event persistence, transactional outbox delivery to SQS, shared `RULES_BASELINE` scores, and cursor-paginated prediction reads; `worker` retains valid messages until their persisted event can be scored and permanently rejects invalid tenant tags |
+| Tests | platform-service context, health, PostgreSQL bootstrap, browser-session cookie/persistence/CSRF, membership resolution and deny-by-default routes, tenant-isolation, event-batch, persistence, transactional-outbox enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, bounded DLQ redrive, successful-delete, and rescore tests; console onboarding/risk contract tests |
+| Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, V3 `account_scores`, V4 `accepted_event_outbox`, V5 Spring Session tables, and V6 tenants/users/memberships; worker uses the same PostgreSQL store without owning Flyway |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
@@ -43,6 +43,14 @@ Still open:
 3. `ApiResponse` is a generic envelope; the blueprint requires Problem Details–compatible errors.
 4. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 5. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
+
+## What PR-026R added
+
+- PostgreSQL tenants, OIDC identities, and tenant memberships with enabled-state controls and referential integrity
+- Exact issuer-plus-subject lookup resolves only one enabled user, tenant, and membership; zero or multiple results fail closed
+- `TenantSessionPrincipal` can be created only through the package-private verified-membership factory and uses the internal user UUID as its principal name
+- Browser-session tests now obtain principals through the real membership resolver instead of constructing tenant authority directly
+- Spring Security explicitly allows health, future login/OAuth paths, and tenant-filtered `/v1/**` routes; every other route is denied
 
 ## What PR-025R added
 
