@@ -20,6 +20,7 @@ Short map of what exists today versus the target locked by `ADR-001`. This is no
 | --- | --- | --- |
 | `/apps/platform-service` | Spring Boot modular monolith | JDBC + Flyway + Testcontainers PostgreSQL |
 | `/apps/worker` | Same-version background processor | non-web Spring Boot skeleton |
+| `/libs/rules-scoring` | Shared RULES_BASELINE domain jar | used by platform-service and worker |
 | `/apps/console` | Angular application | pending |
 
 PostgreSQL is the only approved primary database. Local queues and object storage may use SQS/S3 or LocalStack-compatible substitutes. MongoDB is not approved. Redis is not approved unless a later ADR says so.
