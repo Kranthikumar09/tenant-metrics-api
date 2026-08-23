@@ -22,6 +22,12 @@ ADR-001 freezes `api-gateway`, `core-service`, and `common-models`. It does not 
 
 The modular monolith target is already accepted; only the disposal of placeholders remains open.
 
+### D-007 — Console browser authentication and session
+
+The Angular console must not persist tenant API keys in browser storage. Prediction reads remain blocked until the browser-to-platform authentication and session contract is approved.
+
+Recommended direction: serve the console and platform API from the same site, exchange identity for a short-lived server-managed session, and use Secure, HttpOnly, SameSite cookies with CSRF protection. PR-024R should record the decision before authentication or prediction-fetch code is added.
+
 ## Resolved
 
 ### D-001 — Three-module scaffold

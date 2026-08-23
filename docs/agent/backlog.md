@@ -4,18 +4,19 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-023R — Add a worker dead-letter queue and bounded redrive policy**
+**PR-024R — Lock the console browser authentication and session contract**
 
-- Capacity: S
-- Why next: A valid message whose event never appears currently retries forever
-- Main dependency: PR-022R
-- Out of scope: replay UI, production alerting, webhooks, Redis, MongoDB, production deployment
+- Capacity: XS
+- Why next: The console cannot safely call prediction APIs until browser authentication is defined; API keys must not be stored in Angular
+- Main dependency: PR-020
+- Recommended decision: same-origin, server-managed session with Secure, HttpOnly cookies; document the contract before implementation
+- Out of scope: authentication code, production IdP setup, console prediction fetch, Redis, MongoDB, production deployment
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-021 | Console lists current predictions | S | PR-020 | BLOCKED until browser authentication/session behavior is approved |
+| PR-021 | Console lists current predictions | S | PR-024R | BLOCKED until browser authentication/session behavior is approved |
 | PR-023 | Score history | S | PR-021 | Versioned score rows beyond current snapshot |
 
 ## Completed
@@ -47,7 +48,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-019 | Extract shared rules scorer | implemented |
 | PR-020 | Angular console skeleton | implemented |
 | PR-021R | Do not acknowledge worker messages when persisted event is unavailable | implemented |
-| PR-022R | Persist event enqueue through a transactional outbox | implemented in this branch |
+| PR-022R | Persist event enqueue through a transactional outbox | implemented |
+| PR-023R | Add a worker dead-letter queue and bounded redrive policy | implemented in this branch |
 
 ## Intentionally not scheduled
 
