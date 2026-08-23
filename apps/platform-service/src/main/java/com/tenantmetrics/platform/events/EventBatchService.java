@@ -2,14 +2,17 @@ package com.tenantmetrics.platform.events;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tenantmetrics.platform.scoring.AccountScoreService;
 import com.tenantmetrics.platform.tenancy.TenantContext;
 
 @Service
@@ -21,10 +24,15 @@ class EventBatchService {
 
 	private final EventBatchStore eventBatchStore;
 	private final AcceptedEventPublisher acceptedEventPublisher;
+	private final AccountScoreService accountScoreService;
 
-	EventBatchService(EventBatchStore eventBatchStore, AcceptedEventPublisher acceptedEventPublisher) {
+	EventBatchService(
+			EventBatchStore eventBatchStore,
+			AcceptedEventPublisher acceptedEventPublisher,
+			AccountScoreService accountScoreService) {
 		this.eventBatchStore = eventBatchStore;
 		this.acceptedEventPublisher = acceptedEventPublisher;
+		this.accountScoreService = accountScoreService;
 	}
 
 	@Transactional
@@ -38,6 +46,7 @@ class EventBatchService {
 		int accepted = 0;
 		int rejected = 0;
 		int duplicates = 0;
+		Set<String> acceptedAccounts = new LinkedHashSet<>();
 		for (IngestEvent event : request.events()) {
 			if (!isValid(event)) {
 				rejected++;
@@ -50,11 +59,15 @@ class EventBatchService {
 					Instant.parse(event.occurredAt()),
 					writeProperties(event.properties()))) {
 				acceptedEventPublisher.publish(tenant.tenantId(), event.eventId(), requestId);
+				acceptedAccounts.add(event.accountExternalId());
 				accepted++;
 			}
 			else {
 				duplicates++;
 			}
+		}
+		for (String accountExternalId : acceptedAccounts) {
+			accountScoreService.refresh(tenant.tenantId(), accountExternalId);
 		}
 		EventBatchResponse response = new EventBatchResponse(requestId, accepted, rejected, duplicates);
 		eventBatchStore.insertReceipt(tenant.tenantId(), idempotencyKey, response);
