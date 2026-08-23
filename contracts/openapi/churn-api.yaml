@@ -1,0 +1,236 @@
+openapi: 3.1.0
+info:
+  title: Churn Intelligence API
+  version: 0.1.0
+  description: Versioned contract. This revision defines POST /v1/events:batch and cursor-paginated tenant-scoped prediction reads.
+servers:
+  - url: /
+security:
+  - ApiKeyAuth: []
+paths:
+  /v1/events:batch:
+    post:
+      operationId: ingestEventBatch
+      summary: Accept a bounded, tenant-scoped event batch
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventBatchRequest'
+            examples:
+              sample:
+                value:
+                  events:
+                    - event_id: evt-1
+                      account_external_id: acct-1
+                      event_type: billing.invoice_paid
+                      occurred_at: 2026-08-22T12:00:00Z
+                      schema_version: 1
+      responses:
+        '202':
+          description: Batch accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventBatchResponse'
+        '400':
+          description: Batch exceeds the 500-event limit or the request is malformed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Missing or unknown API key
+        '413':
+          description: Request body exceeds the configured size limit
+  /v1/accounts/{account_external_id}/prediction:
+    get:
+      operationId: getAccountPrediction
+      summary: Return the current tenant-scoped rules score for one account
+      parameters:
+        - name: account_external_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      responses:
+        '200':
+          description: Current RULES_BASELINE score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+        '401':
+          description: Missing or unknown API key
+        '404':
+          description: No score for this account in the caller's tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /v1/predictions:
+    get:
+      operationId: listPredictions
+      summary: List current tenant-scoped scores with a stable cursor
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque cursor from the previous page. Tenant is not encoded in the cursor.
+      responses:
+        '200':
+          description: A page of current scores for the verified tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionList'
+        '400':
+          description: Invalid limit or cursor
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Missing or unknown API key
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+  schemas:
+    EventBatchRequest:
+      type: object
+      additionalProperties: false
+      required: [events]
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/Event'
+    Event:
+      type: object
+      additionalProperties: false
+      required: [event_id, account_external_id, event_type, occurred_at, schema_version]
+      properties:
+        event_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        account_external_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        event_type:
+          type: string
+          minLength: 3
+          maxLength: 128
+          pattern: '^[A-Za-z][A-Za-z0-9_]*\.[A-Za-z][A-Za-z0-9_.]*$'
+        occurred_at:
+          type: string
+          format: date-time
+        schema_version:
+          type: integer
+          minimum: 1
+          maximum: 1
+        properties:
+          type: object
+          additionalProperties: true
+          description: Bounded metadata. An exact allowlist is not defined yet.
+    EventBatchResponse:
+      type: object
+      required: [request_id, accepted, rejected, duplicates]
+      properties:
+        request_id:
+          type: string
+        accepted:
+          type: integer
+          minimum: 0
+        rejected:
+          type: integer
+          minimum: 0
+        duplicates:
+          type: integer
+          minimum: 0
+    Prediction:
+      type: object
+      additionalProperties: false
+      required: [account_external_id, eligibility, score_version, scored_at, explanation_status]
+      properties:
+        account_external_id:
+          type: string
+        eligibility:
+          type: string
+        health_score:
+          type: integer
+        risk_band:
+          type: string
+        risk_probability:
+          type: number
+          nullable: true
+          description: Always omitted or null for RULES_BASELINE. Not a learned churn probability.
+        score_version:
+          type: string
+        feature_version:
+          type: string
+        drivers:
+          type: array
+          items:
+            type: object
+        scored_at:
+          type: string
+          format: date-time
+        freshness_seconds:
+          type: integer
+        explanation_status:
+          type: string
+          enum: [none]
+    PredictionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/Prediction'
+        next_cursor:
+          type: string
+          description: Present when another page exists. Decode is server-side only.
+    ProblemDetails:
+      type: object
+      required: [status]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string

@@ -18,8 +18,9 @@ Work on exactly one small pull request at a time.
 
 Approval is required once per PR, not for individual files, edits, safe local commands, or test runs.
 
-Do not begin implementation until the user replies `APPROVE PR-XXX`.
-Read-only inspection and planning are allowed before approval.
+Do not begin implementation until the user replies `APPROVE PR-XXX`, or until the current recommended PR is approved or merged on GitHub.
+
+After that signal, run a system query (`gh pr view` plus the cloud message queue). If the PR is approved or merged and no newer instruction is queued, implement the next recommended backlog PR. Read-only inspection and planning are allowed before approval.
 
 Do not attempt to build the entire product in one session or load the entire blueprint into working context for every task.
 
@@ -36,15 +37,28 @@ When instructions conflict, use this order:
 
 Do not silently resolve a meaningful conflict. Explain it and request a decision.
 
+## Approved architecture contract
+
+ADR-001 is the approved architecture contract. Read `docs/architecture/ADRs/ADR-001-mvp-architecture.md` and `docs/architecture/context-map.md` before adding modules or dependencies.
+
+- Target layout is `/apps/platform-service`, `/apps/worker`, and `/apps/console`.
+- `/apps/worker` is a same-version background process, not an independently extracted microservice.
+- Existing `api-gateway`, `core-service`, and `common-models` are frozen legacy modules.
+- New implementation must not build on the frozen modules.
+- New modules must not introduce MongoDB or Redis.
+- MongoDB and Redis removal from legacy modules requires separate approval.
+- Work must proceed through small PRs with approval between PRs.
+
 ## Cost-optimized MVP
 
-Use this baseline unless an approved ADR changes it:
+Use this baseline. ADR-001 is the architecture contract that defines it:
 
 - Java 21
-- Spring Boot modular monolith
-- Angular frontend, which may initially be served from the Spring Boot deployment
+- Spring Boot modular monolith at `/apps/platform-service`
+- `/apps/worker` for event, feature, scoring, and webhook processing
+- Angular frontend at `/apps/console`, which may initially be served from the Spring Boot deployment
 - PostgreSQL as the primary database
-- PostgreSQL transactional outbox and work queue for background processing
+- Local SQS/S3 or LocalStack-compatible substitutes for queues and object storage
 - Docker Compose for local development
 - Supabase PostgreSQL/Auth/Storage when managed services are required
 - Railway or another approved low-cost container host
@@ -53,25 +67,20 @@ Use this baseline unless an approved ADR changes it:
 - Rules-based churn scoring before learned models
 - Provider interfaces around storage, queues, authentication, and explanations
 
-Do not provision or introduce the following during the MVP unless separately approved:
+Do not provision the following during the MVP unless a later ADR or explicit approval changes it:
 
-- Amazon SQS
-- Amazon S3
 - AWS WAF
-- API Gateway
+- Managed AWS API Gateway
 - Bedrock
 - Redis
 - Kubernetes
-- Multiple microservices
+- Multiple independently extracted microservices
 - Multiple cloud environments
-- Separate worker infrastructure
 - Multi-region deployment
 - Terraform or CDK
 - Paid monitoring platforms
 
-Design replaceable interfaces where future migration may be necessary. Do not build speculative infrastructure.
-
-The blueprint's AWS production options remain valid later upgrades. They are not required for the MVP.
+SQS, S3, and the `/apps/worker` process are approved by ADR-001. Prefer LocalStack-compatible substitutes locally. Design replaceable interfaces where later migration may be necessary. Do not build speculative infrastructure.
 
 ## Context management
 

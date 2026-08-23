@@ -12,13 +12,17 @@ The Maven reactor contains three placeholder modules from an earlier scaffold:
 - `core-service`
 - `api-gateway`
 
-The approved MVP direction is a Spring Boot modular monolith with PostgreSQL, not a microservice split and not MongoDB. That decision is recorded as open in `docs/agent/decisions-needed.md` and will be locked by an ADR before application behavior is added.
+The approved MVP direction is a Spring Boot modular monolith with PostgreSQL, not a microservice split and not MongoDB. Architecture is locked by ADR-001. The product contract is `docs/product/PRD.md`.
 
 ## Agent and product memory
 
 Start here:
 
 - `AGENTS.md` — operating model, MVP baseline, TDD, and stop conditions
+- `docs/product/PRD.md` — Milestone 0 product contract and BLOCKED items
+- `docs/security/data-classification.md` — allowed and forbidden data classes
+- `docs/security/threat-model.md` — STRIDE catalog and required abuse scenarios
+- `docs/architecture/ADRs/ADR-template.md` — format for later ADRs
 - `docs/agent/current-state.md` — what exists now
 - `docs/agent/project-index.md` — compact blueprint map
 - `docs/agent/backlog.md` — next small PRs
@@ -26,8 +30,18 @@ Start here:
 
 ## Verification
 
-Until a canonical `./scripts/verify.sh` exists, PR-001 validation is:
+Canonical verification:
 
 ```bash
-./scripts/check-agent-docs.sh
+./scripts/verify.sh
 ```
+
+GitHub Actions runs the same script on every push and pull request. The workflow does not deploy and does not use cloud credentials.
+
+Local PostgreSQL and LocalStack (SQS/S3 only):
+
+```bash
+docker compose up -d postgres localstack
+```
+
+Then run `platform-service` with `--spring.profiles.active=local`. LocalStack listens on `http://localhost:4566`. Do not put AWS keys in Compose; this stack is a local substitute only.
