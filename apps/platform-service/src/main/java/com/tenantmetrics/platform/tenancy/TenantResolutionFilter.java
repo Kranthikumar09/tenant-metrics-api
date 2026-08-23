@@ -6,19 +6,19 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.tenantmetrics.platform.security.TenantSessionPrincipal;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-@Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
 public class TenantResolutionFilter extends OncePerRequestFilter {
 
 	public static final String TENANT_CONTEXT_ATTRIBUTE = TenantContext.class.getName();
@@ -38,17 +38,38 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
 			return;
 		}
 		String rawKey = stripped.getHeader("X-Api-Key");
-		if (rawKey == null || rawKey.isBlank()) {
-			response.setStatus(HttpStatus.UNAUTHORIZED.value());
+		if (rawKey != null && !rawKey.isBlank()) {
+			String tenantId = apiKeyProperties.getApiKeyHashes().get(sha256(rawKey));
+			if (tenantId == null || tenantId.isBlank()) {
+				writeUnauthorized(response);
+				return;
+			}
+			continueWithTenant(stripped, response, filterChain, tenantId);
 			return;
 		}
-		String tenantId = apiKeyProperties.getApiKeyHashes().get(sha256(rawKey));
-		if (tenantId == null || tenantId.isBlank()) {
-			response.setStatus(HttpStatus.UNAUTHORIZED.value());
+
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || !authentication.isAuthenticated()
+				|| !(authentication.getPrincipal() instanceof TenantSessionPrincipal principal)) {
+			writeUnauthorized(response);
 			return;
 		}
-		stripped.setAttribute(TENANT_CONTEXT_ATTRIBUTE, new TenantContext(tenantId));
-		filterChain.doFilter(stripped, response);
+		continueWithTenant(stripped, response, filterChain, principal.tenantId());
+	}
+
+	private static void continueWithTenant(HttpServletRequest request, HttpServletResponse response,
+			FilterChain filterChain, String tenantId) throws ServletException, IOException {
+		request.setAttribute(TENANT_CONTEXT_ATTRIBUTE, new TenantContext(tenantId));
+		filterChain.doFilter(request, response);
+	}
+
+	private static void writeUnauthorized(HttpServletResponse response) throws IOException {
+		response.setStatus(HttpStatus.UNAUTHORIZED.value());
+		response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+		response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+		response.getWriter().write("""
+				{"type":"about:blank","title":"Unauthorized","status":401,"detail":"Authentication is required"}
+				""");
 	}
 
 	private static String sha256(String value) {
