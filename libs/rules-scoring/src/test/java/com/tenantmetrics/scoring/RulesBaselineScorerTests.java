@@ -1,4 +1,4 @@
-package com.tenantmetrics.platform.scoring;
+package com.tenantmetrics.scoring;
 
 import java.time.Instant;
 import java.util.List;

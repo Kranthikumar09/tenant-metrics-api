@@ -1,11 +1,8 @@
-package com.tenantmetrics.platform.scoring;
+package com.tenantmetrics.scoring;
 
 import java.time.Instant;
 
-record AccountEvent(String tenantId, String accountExternalId, String eventType, Instant occurredAt) {
-}
-
-record AccountScore(
+public record AccountScore(
 		String tenantId,
 		String accountExternalId,
 		String eligibility,

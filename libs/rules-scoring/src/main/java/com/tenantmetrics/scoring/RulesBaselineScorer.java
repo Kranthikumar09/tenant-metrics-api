@@ -1,4 +1,4 @@
-package com.tenantmetrics.platform.scoring;
+package com.tenantmetrics.scoring;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -8,14 +8,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.stereotype.Component;
+public final class RulesBaselineScorer {
 
-@Component
-class RulesBaselineScorer {
-
-	static final String SCORE_VERSION = "RULES_BASELINE";
-	static final String FEATURE_VERSION = "rules-features-v1";
-	static final int OBSERVATION_WINDOW_DAYS = 60;
+	public static final String SCORE_VERSION = "RULES_BASELINE";
+	public static final String FEATURE_VERSION = "rules-features-v1";
+	public static final int OBSERVATION_WINDOW_DAYS = 60;
 
 	private static final Set<String> DISTRESS_TYPES = Set.of(
 			"billing.payment_failed",
@@ -28,7 +25,7 @@ class RulesBaselineScorer {
 
 	// Tenant id must come from TenantContext or a verified worker tag, never a client header.
 	// risk_probability stays null. RULES_BASELINE never claims a learned churn probability or label.
-	AccountScore score(String tenantId, String accountExternalId, List<AccountEvent> events, Instant asOf) {
+	public AccountScore score(String tenantId, String accountExternalId, List<AccountEvent> events, Instant asOf) {
 		List<AccountEvent> scoped = inWindow(tenantId, accountExternalId, events, asOf);
 		if (scoped.isEmpty()) {
 			return new AccountScore(

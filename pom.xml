@@ -26,6 +26,7 @@
 		<module>api-gateway</module>
 		<module>apps/platform-service</module>
 		<module>apps/worker</module>
+		<module>libs/rules-scoring</module>
 	</modules>
 
 	<properties>
@@ -48,6 +49,11 @@
 			<dependency>
 				<groupId>com.tenantmetrics</groupId>
 				<artifactId>common-models</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.tenantmetrics</groupId>
+				<artifactId>rules-scoring</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 		</dependencies>
