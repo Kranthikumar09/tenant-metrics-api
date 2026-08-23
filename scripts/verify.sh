@@ -25,6 +25,14 @@ echo "==> platform-service package"
 echo "==> worker package"
 ./mvnw -ntp -pl apps/worker -am package
 
+echo "==> console tests and build"
+(
+  cd "${ROOT}/apps/console"
+  npm ci
+  npm test
+  npm run build
+)
+
 echo "==> platform-service and worker dependency trees (ban MongoDB and Redis)"
 tree_log="$(mktemp)"
 ./mvnw -ntp -pl apps/platform-service,apps/worker,libs/rules-scoring dependency:tree | tee "${tree_log}"
