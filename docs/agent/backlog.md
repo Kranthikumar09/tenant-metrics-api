@@ -4,18 +4,19 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-021 — Console lists current predictions**
+**PR-022R — Persist event enqueue through a transactional outbox**
 
 - Capacity: S
-- Why next: The console shell exists but does not read tenant scores
-- Main dependency: PR-020
-- Out of scope: learned models, webhooks, Redis, MongoDB, production IdP
+- Why next: Worker retry safety prevents premature acknowledgement, but the database write and queue publish are still not atomic
+- Main dependency: PR-021R
+- Out of scope: console integration, webhooks, DLQ policy, Redis, MongoDB, production deployment
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-022 | Score history | S | PR-021 | Versioned score rows beyond current snapshot |
+| PR-021 | Console lists current predictions | S | PR-020 | BLOCKED until browser authentication/session behavior is approved |
+| PR-023 | Score history | S | PR-021 | Versioned score rows beyond current snapshot |
 
 ## Completed
 
@@ -44,7 +45,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-017 | Worker rescoring from tenant-tagged messages | implemented |
 | PR-018 | Prediction list cursor pagination | implemented |
 | PR-019 | Extract shared rules scorer | implemented |
-| PR-020 | Angular console skeleton | implemented in this branch |
+| PR-020 | Angular console skeleton | implemented |
+| PR-021R | Do not acknowledge worker messages when persisted event is unavailable | implemented in this branch |
 
 ## Intentionally not scheduled
 

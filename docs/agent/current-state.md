@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-020 — Angular console skeleton.
+Last updated after PR-021R — worker retry safety.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, LocalStack SQS publish, `RULES_BASELINE` scores, and cursor-paginated prediction reads. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, rejects missing or mismatched tenant tags, and refreshes tenant-scoped scores. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, LocalStack SQS publish, `RULES_BASELINE` scores, and cursor-paginated prediction reads. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-020-console-skeleton-9d98`
+- Branch: `cursor/pr-021r-worker-retry-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
 - Threat model: `docs/security/threat-model.md`
@@ -25,8 +25,8 @@ Last updated after PR-020 — Angular console skeleton.
 | Area | State |
 | --- | --- |
 | Product docs | ADR-001, PRD, data classification, ADR template, threat model, events:batch, and cursor-paginated prediction-read OpenAPI exist |
-| Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, SQS enqueue, shared `RULES_BASELINE` scores, and cursor-paginated prediction reads; `worker` consumes tenant-tagged messages and refreshes scores |
-| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, and rescore tests; console onboarding/risk contract tests |
+| Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, SQS enqueue, shared `RULES_BASELINE` scores, and cursor-paginated prediction reads; `worker` retains valid messages until their persisted event can be scored and permanently rejects invalid tenant tags |
+| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, retry, successful-delete, and rescore tests; console onboarding/risk contract tests |
 | Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, and V3 `account_scores`; worker uses the same PostgreSQL store without owning Flyway |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
@@ -40,9 +40,15 @@ Still open:
 1. MongoDB and Redis remain installed/declared on frozen legacy modules. Removal requires a later PR that lists exact files and is approved.
 2. `core-service` uses package `com.tenatmetrics`; other modules use `com.tenantmetrics`.
 3. `ApiResponse` is a generic envelope; the blueprint requires Problem Details–compatible errors.
-4. Foundation PRs were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
-5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
-6. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
+4. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
+5. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
+
+## What PR-021R added
+
+- Valid tenant-tagged messages remain retryable when their PostgreSQL event is not yet visible
+- A message is recorded as accepted and deleted only after its score refresh succeeds
+- Missing or mismatched tenant tags remain permanent rejections; a missing `event_id` is reported as `missing_event`
+- The ingestion publish path still lacks a transactional outbox; that is the next stabilization priority
 
 ## What PR-020 added
 

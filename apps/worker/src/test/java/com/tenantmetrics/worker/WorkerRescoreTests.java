@@ -25,9 +25,14 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
+import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -87,19 +92,29 @@ class WorkerRescoreTests {
 
 	@Test
 	void acceptedTenantTaggedMessageWritesThatTenantScore() {
-		insertEvent("tenant-a", "evt-rescore-a", "acct-rescore-a", "auth.login");
-		insertEvent("tenant-b", "evt-rescore-b-noise", "acct-rescore-a", "auth.login");
+		List<Message> unexpectedMessages = List.of();
+		setQueueVisibilityTimeout(0);
+		try {
+			insertEvent("tenant-a", "evt-rescore-a", "acct-rescore-a", "auth.login");
+			insertEvent("tenant-b", "evt-rescore-b-noise", "acct-rescore-a", "auth.login");
 
-		send(body("tenant-a", "evt-rescore-a"), "tenant-a");
-		assertThat(poller.pollOnce()).isEqualTo(1);
-		assertThat(poller.acceptedEventIds()).contains("evt-rescore-a");
+			send(body("tenant-a", "evt-rescore-a"), "tenant-a");
+			assertThat(poller.pollOnce()).isEqualTo(1);
+			unexpectedMessages = receiveMessages();
+			assertThat(poller.acceptedEventIds()).contains("evt-rescore-a");
+			assertThat(unexpectedMessages).isEmpty();
 
-		Map<String, Object> score = findScore("tenant-a", "acct-rescore-a");
-		assertThat(score).isNotNull();
-		assertThat(score.get("score_version")).isEqualTo("RULES_BASELINE");
-		assertThat(((Number) score.get("health_score")).intValue()).isEqualTo(70);
-		assertThat(score.get("risk_probability")).isNull();
-		assertThat(findScore("tenant-b", "acct-rescore-a")).isNull();
+			Map<String, Object> score = findScore("tenant-a", "acct-rescore-a");
+			assertThat(score).isNotNull();
+			assertThat(score.get("score_version")).isEqualTo("RULES_BASELINE");
+			assertThat(((Number) score.get("health_score")).intValue()).isEqualTo(70);
+			assertThat(score.get("risk_probability")).isNull();
+			assertThat(findScore("tenant-b", "acct-rescore-a")).isNull();
+		}
+		finally {
+			unexpectedMessages.forEach(this::delete);
+			setQueueVisibilityTimeout(30);
+		}
 	}
 
 	@Test
@@ -127,11 +142,23 @@ class WorkerRescoreTests {
 	}
 
 	@Test
-	void missingEventDoesNotCreateAScore() {
-		send(body("tenant-a", "evt-rescore-missing"), "tenant-a");
-		assertThat(poller.pollOnce()).isEqualTo(1);
-		assertThat(poller.acceptedEventIds()).contains("evt-rescore-missing");
-		assertThat(findScore("tenant-a", "acct-from-missing-event")).isNull();
+	void missingEventRemainsRetryableAndIsNotRecordedAsAccepted() {
+		String eventId = "evt-rescore-missing";
+		List<Message> retryableMessages = List.of();
+		setQueueVisibilityTimeout(0);
+		try {
+			send(body("tenant-a", eventId), "tenant-a");
+			assertThat(poller.pollOnce()).isEqualTo(1);
+			retryableMessages = receiveMessages();
+
+			assertThat(poller.acceptedEventIds()).doesNotContain(eventId);
+			assertThat(retryableMessages).anyMatch(message -> message.body().contains(eventId));
+			assertThat(findScore("tenant-a", "acct-from-missing-event")).isNull();
+		}
+		finally {
+			retryableMessages.forEach(this::delete);
+			setQueueVisibilityTimeout(30);
+		}
 	}
 
 	private void insertEvent(String tenantId, String eventId, String accountId, String eventType) {
@@ -169,6 +196,29 @@ class WorkerRescoreTests {
 						.dataType("String")
 						.stringValue(attributeTenantId)
 						.build()))
+				.build());
+	}
+
+	private List<Message> receiveMessages() {
+		return sqsClient.receiveMessage(ReceiveMessageRequest.builder()
+				.queueUrl(queueUrl)
+				.maxNumberOfMessages(10)
+				.waitTimeSeconds(1)
+				.build())
+				.messages();
+	}
+
+	private void delete(Message message) {
+		sqsClient.deleteMessage(DeleteMessageRequest.builder()
+				.queueUrl(queueUrl)
+				.receiptHandle(message.receiptHandle())
+				.build());
+	}
+
+	private void setQueueVisibilityTimeout(int seconds) {
+		sqsClient.setQueueAttributes(SetQueueAttributesRequest.builder()
+				.queueUrl(queueUrl)
+				.attributes(Map.of(QueueAttributeName.VISIBILITY_TIMEOUT, Integer.toString(seconds)))
 				.build());
 	}
 

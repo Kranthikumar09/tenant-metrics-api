@@ -63,16 +63,17 @@ class AcceptedEventPoller {
 			String attributeTenantId = tenantAttribute(message.messageAttributes());
 			ConsumeResult result = handler.handle(message.body(), attributeTenantId);
 			if (result.accepted()) {
-				acceptedEventIds.add(result.eventId());
-				scoreRefresher.refresh(result.tenantId(), result.eventId());
+				if (scoreRefresher.refresh(result.tenantId(), result.eventId())) {
+					acceptedEventIds.add(result.eventId());
+					delete(message);
+				}
 			}
-			else if (result.rejection() != null) {
-				rejectedReasons.add(result.rejection());
+			else {
+				if (result.rejection() != null) {
+					rejectedReasons.add(result.rejection());
+				}
+				delete(message);
 			}
-			sqsClient.deleteMessage(DeleteMessageRequest.builder()
-					.queueUrl(queueUrl)
-					.receiptHandle(message.receiptHandle())
-					.build());
 		}
 		return messages.size();
 	}
@@ -83,6 +84,13 @@ class AcceptedEventPoller {
 
 	List<String> rejectedReasons() {
 		return List.copyOf(rejectedReasons);
+	}
+
+	private void delete(Message message) {
+		sqsClient.deleteMessage(DeleteMessageRequest.builder()
+				.queueUrl(queueUrl)
+				.receiptHandle(message.receiptHandle())
+				.build());
 	}
 
 	private static String tenantAttribute(Map<String, MessageAttributeValue> attributes) {
