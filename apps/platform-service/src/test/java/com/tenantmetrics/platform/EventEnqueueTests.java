@@ -7,7 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.tenantmetrics.platform.events.AcceptedEventOutboxDispatcher;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -33,6 +36,12 @@ class EventEnqueueTests extends AbstractPlatformPostgresTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	private AcceptedEventOutboxDispatcher outboxDispatcher;
+
 	private SqsClient sqsClient;
 	private String queueUrl;
 
@@ -47,15 +56,21 @@ class EventEnqueueTests extends AbstractPlatformPostgresTest {
 		sqsClient.createQueue(CreateQueueRequest.builder().queueName("accepted-events").build());
 		queueUrl = sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName("accepted-events").build()).queueUrl();
 		sqsClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(queueUrl).build());
+		jdbcTemplate.update("DELETE FROM accepted_event_outbox");
 	}
 
 	@Test
-	void acceptedEventIsEnqueuedWithTenantA() throws Exception {
+	void acceptedEventIsCommittedToOutboxThenPublishedWithTenantA() throws Exception {
 		ingest(TENANT_A_KEY, "idem-enq-a", "evt-enq-a", "acct-a");
+
+		assertThat(receiveAll()).isEmpty();
+		assertThat(countOutbox("tenant-a", "evt-enq-a", false)).isEqualTo(1);
+		assertThat(outboxDispatcher.dispatchOnce()).isEqualTo(1);
 
 		Message message = requireMessageContaining("evt-enq-a");
 		assertThat(message.body()).contains("\"tenant_id\":\"tenant-a\"");
 		assertThat(message.body()).doesNotContain("tenant-b");
+		assertThat(countOutbox("tenant-a", "evt-enq-a", true)).isEqualTo(1);
 	}
 
 	@Test
@@ -82,6 +97,10 @@ class EventEnqueueTests extends AbstractPlatformPostgresTest {
 				.andExpect(status().isAccepted())
 				.andExpect(jsonPath("$.accepted").value(1));
 
+		assertThat(countOutbox("tenant-a", "evt-enq-forged", false)).isEqualTo(1);
+		assertThat(countOutbox("tenant-b", "evt-enq-forged", false)).isZero();
+		outboxDispatcher.dispatchOnce();
+
 		Message message = requireMessageContaining("evt-enq-forged");
 		assertThat(message.body()).contains("\"tenant_id\":\"tenant-a\"");
 		assertThat(message.body()).doesNotContain("\"tenant_id\":\"tenant-b\"");
@@ -91,6 +110,10 @@ class EventEnqueueTests extends AbstractPlatformPostgresTest {
 	void tenantBEventIsEnqueuedSeparately() throws Exception {
 		ingest(TENANT_A_KEY, "idem-enq-shared-a", "evt-enq-shared", "acct-a");
 		ingest(TENANT_B_KEY, "idem-enq-shared-b", "evt-enq-shared", "acct-b");
+
+		assertThat(countOutbox("tenant-a", "evt-enq-shared", false)).isEqualTo(1);
+		assertThat(countOutbox("tenant-b", "evt-enq-shared", false)).isEqualTo(1);
+		outboxDispatcher.dispatchOnce();
 
 		List<Message> messages = receiveAll();
 		assertThat(messages).anyMatch(message -> message.body().contains("evt-enq-shared")
@@ -103,6 +126,9 @@ class EventEnqueueTests extends AbstractPlatformPostgresTest {
 	void replayDoesNotEnqueueASecondMessage() throws Exception {
 		ingest(TENANT_A_KEY, "idem-enq-replay", "evt-enq-replay", "acct-a");
 		ingest(TENANT_A_KEY, "idem-enq-replay", "evt-enq-replay", "acct-a");
+
+		assertThat(countOutbox("tenant-a", "evt-enq-replay", false)).isEqualTo(1);
+		outboxDispatcher.dispatchOnce();
 
 		List<Message> messages = receiveAll().stream()
 				.filter(message -> message.body().contains("evt-enq-replay"))
@@ -134,6 +160,21 @@ class EventEnqueueTests extends AbstractPlatformPostgresTest {
 				.waitTimeSeconds(2)
 				.build())
 				.messages();
+	}
+
+	private int countOutbox(String tenantId, String eventId, boolean published) {
+		Integer count = jdbcTemplate.queryForObject(
+				"""
+						SELECT COUNT(*)
+						FROM accepted_event_outbox
+						WHERE tenant_id = ?
+						  AND event_id = ?
+						  AND published_at IS %s NULL
+						""".formatted(published ? "NOT" : ""),
+				Integer.class,
+				tenantId,
+				eventId);
+		return count == null ? 0 : count;
 	}
 
 	private static String batchJson(String eventId, String accountExternalId) {
