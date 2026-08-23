@@ -8,7 +8,7 @@ import org.springframework.core.env.Environment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
 class WorkerApplicationTests {
 
 	@Autowired

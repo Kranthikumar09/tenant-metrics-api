@@ -4,18 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-017 — Worker rescoring from tenant-tagged messages**
+**PR-018 — Prediction list cursor pagination**
 
 - Capacity: S
-- Why next: Scores refresh on ingest; the worker still does not rescore accepted messages
-- Main dependency: PR-016
+- Why next: Prediction list is capped at 500 with no stable cursor
+- Main dependency: PR-017
 - Out of scope: learned models, webhooks, Redis, MongoDB, production IdP
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-018 | Prediction list cursor pagination | S | PR-017 | Filters and stable cursors |
+| PR-019 | Extract shared rules scorer | S | PR-018 | Remove worker/platform duplication |
 
 ## Completed
 
@@ -40,7 +40,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-013 | Enqueue accepted events for the worker | implemented |
 | PR-014 | Worker consumes tenant-tagged event messages | implemented |
 | PR-015 | Rules-based cold-start score | implemented |
-| PR-016 | Predictions read API | implemented in this branch |
+| PR-016 | Predictions read API | implemented |
+| PR-017 | Worker rescoring from tenant-tagged messages | implemented in this branch |
 
 ## Intentionally not scheduled
 

@@ -24,7 +24,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
 class EventConsumeTests {
 
 	static final LocalStackContainer LOCALSTACK = new LocalStackContainer(

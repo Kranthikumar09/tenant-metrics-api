@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-016 — Predictions read API.
+Last updated after PR-017 — Worker rescoring.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, LocalStack SQS publish, and a transparent `RULES_BASELINE` account score. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages and rejects missing or mismatched tenant tags. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, LocalStack SQS publish, `RULES_BASELINE` scores, and prediction reads. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, rejects missing or mismatched tenant tags, and refreshes tenant-scoped scores. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-016-predictions-read-9d98`
+- Branch: `cursor/pr-017-worker-rescore-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
 - Threat model: `docs/security/threat-model.md`
@@ -25,9 +25,9 @@ Last updated after PR-016 — Predictions read API.
 | Area | State |
 | --- | --- |
 | Product docs | ADR-001, PRD, data classification, ADR template, threat model, events:batch, and prediction-read OpenAPI exist |
-| Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, SQS enqueue, `RULES_BASELINE` scores, and prediction reads; `worker` consumes tenant-tagged SQS messages |
-| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, enqueue, rules-score, and prediction-read; worker context-load, non-web assertion, and consume tests |
-| Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, and V3 `account_scores`; worker has no datastore |
+| Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, SQS enqueue, `RULES_BASELINE` scores, and prediction reads; `worker` consumes tenant-tagged messages and refreshes scores |
+| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, enqueue, rules-score, and prediction-read; worker context-load, consume, and rescore tests |
+| Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, and V3 `account_scores`; worker uses the same PostgreSQL store without owning Flyway |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
@@ -43,6 +43,13 @@ Still open:
 4. Foundation PRs were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
 5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 6. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
+
+## What PR-017 added
+
+- Worker refreshes `RULES_BASELINE` scores after an accepted tenant-tagged message
+- Mismatched or missing tenant tags do not write scores
+- Worker context-load tests still boot without PostgreSQL
+- The rules engine is duplicated in the worker; a shared module is later
 
 ## What PR-016 added
 
@@ -110,4 +117,4 @@ Still open:
 4. `docs/security/threat-model.md`
 5. `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
 6. `docs/architecture/context-map.md`
-7. `apps/platform-service` scoring and events packages, plus `apps/worker`, unless the task is about frozen modules
+7. `apps/platform-service` scoring and `apps/worker` scoring packages, unless the task is about frozen modules
