@@ -192,7 +192,10 @@ class WorkerRescoreTests {
 				deadLetterMessages = receiveMessages(deadLetterQueueUrl);
 			}
 
-			assertThat(deadLetterMessages).anyMatch(message -> message.body().contains(eventId));
+			assertThat(deadLetterMessages).anySatisfy(message -> {
+				assertThat(message.body()).contains(eventId);
+				assertThat(message.messageAttributes().get("tenant_id").stringValue()).isEqualTo("tenant-a");
+			});
 			assertThat(poller.acceptedEventIds()).doesNotContain(eventId);
 			assertThat(findScore("tenant-a", "acct-from-missing-event")).isNull();
 		}
@@ -252,6 +255,7 @@ class WorkerRescoreTests {
 				.queueUrl(targetQueueUrl)
 				.maxNumberOfMessages(10)
 				.waitTimeSeconds(1)
+				.messageAttributeNames("tenant_id")
 				.build())
 				.messages();
 	}
