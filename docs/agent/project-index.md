@@ -13,7 +13,7 @@ Load a section only when the current PR needs it. Status values are `implemented
 | Decisions to lock | Lock ICP, scored entity, horizon, capacity, region, data sensitivity, and pricing before model work. | ADR-001 locks layout and stores; PRD names defaults and `BLOCKED` items | pending |
 | Recommended architecture | Modular monolith, PostgreSQL source of truth, durable async work, replaceable provider seams. Local SQS/S3 or LocalStack are approved. | `docs/architecture/context-map.md`; current modules remain frozen placeholders | implemented |
 | Tenant isolation and security | Strip client tenant headers; resolve tenant from a verified credential; tenant-scope every query and side effect. | header strip, hashed API-key TenantContext, and tenant-scoped event writes exist; no OIDC yet | pending |
-| External API and data contracts | Versioned OpenAPI first. Account upsert, batch events, churn definition, predictions, webhooks, usage. | `contracts/openapi/churn-api.yaml` defines events:batch and prediction reads | pending |
+| External API and data contracts | Versioned OpenAPI first. Account upsert, batch events, churn definition, predictions, webhooks, usage. | `contracts/openapi/churn-api.yaml` defines events:batch and cursor-paginated prediction reads | pending |
 | Churn scoring and ML lifecycle | Rules baseline first; learned models only after labels, time-split evaluation, and a release gate. | `apps/platform-service` scoring package; `ml/` (missing) | pending |
 | Reliability, webhooks, and operations | Transactional outbox, signed webhooks, SLOs, tenant-safe telemetry. | worker consume + rescore exist; no outbox yet | pending |
 | SaaS control plane | Onboarding, RBAC, entitlements, usage, billing, console, supportability. | no control-plane module yet | pending |
@@ -25,7 +25,7 @@ Load a section only when the current PR needs it. Status values are `implemented
 | Milestone 3 — contract-first ingestion | OpenAPI plus idempotent `POST /v1/events:batch`. | OpenAPI + tenant-scoped PostgreSQL ingest | pending |
 | Milestone 4 — durable event processing | Tenant-scoped event persistence and replay. Local SQS/S3 or LocalStack approved by ADR-001. | Events persist, enqueue, and the worker rejects missing/mismatched tenant tags | pending |
 | Milestone 5 — features and rules score | Versioned features and cold-start rules scoring with history. | `RULES_BASELINE` current score exists; feature registry and history are later | pending |
-| Milestone 6 — prediction API and console | Tenant-safe prediction reads and Angular onboarding/risk console. | prediction GET endpoints exist; no `apps/console` | pending |
+| Milestone 6 — prediction API and console | Tenant-safe prediction reads and Angular onboarding/risk console. | prediction GET endpoints and cursor pagination exist; no `apps/console` | pending |
 | Milestone 7 — webhook reliability | Outbox, signing, retry, DLQ, replay. | none | pending |
 | Milestone 8 — learned-model pipeline | Point-in-time Python training and gated promotion. | none | pending |
 | Milestone 9 — optional explanations | Provider interface; Bedrock adapter deferred unless approved. | none | deferred |
