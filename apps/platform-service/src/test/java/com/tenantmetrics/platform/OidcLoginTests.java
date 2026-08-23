@@ -32,13 +32,14 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tenantmetrics.platform.security.TenantMembershipResolver;
 import com.tenantmetrics.platform.security.TenantOidcUser;
 import com.tenantmetrics.platform.security.TenantOidcUserService;
+
+import jakarta.servlet.http.Cookie;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -79,7 +80,7 @@ class OidcLoginTests extends AbstractPlatformPostgresTest {
 		assertThat(query.getFirst("code_challenge")).isNotBlank();
 		assertThat(query.getFirst("code_challenge_method")).isEqualTo("S256");
 		assertThat(query).doesNotContainKey("client_secret");
-		assertThat(result.getRequest().getSession(false)).isNotNull();
+		assertThat(requiredCookie(result, "__Host-tm_session")).isNotNull();
 	}
 
 	@Test
@@ -87,16 +88,25 @@ class OidcLoginTests extends AbstractPlatformPostgresTest {
 		MvcResult initiated = mockMvc.perform(get("/oauth2/authorization/test-oidc"))
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
-		MockHttpSession session = (MockHttpSession) initiated.getRequest().getSession(false);
+		Cookie session = requiredCookie(initiated, "__Host-tm_session");
 
 		mockMvc.perform(get("/login/oauth2/code/test-oidc")
-					.session(session)
+					.secure(true)
+					.cookie(session)
 					.queryParam("code", "must-not-be-exchanged")
 					.queryParam("state", "invalid-state"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
 				.andExpect(jsonPath("$.status").value(401))
 				.andExpect(result -> assertThat(result.getResponse().getRedirectedUrl()).isNull());
+	}
+
+	private static Cookie requiredCookie(MvcResult result, String name) {
+		Cookie cookie = result.getResponse().getCookie(name);
+		if (cookie == null) {
+			throw new AssertionError("Missing cookie " + name);
+		}
+		return cookie;
 	}
 
 	@Test
