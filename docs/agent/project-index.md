@@ -18,14 +18,14 @@ Load a section only when the current PR needs it. Status values are `implemented
 | Reliability, webhooks, and operations | Transactional outbox, signed webhooks, SLOs, tenant-safe telemetry. | worker consume + rescore exist; no outbox yet | pending |
 | SaaS control plane | Onboarding, RBAC, entitlements, usage, billing, console, supportability. | no control-plane module yet | pending |
 | AI-assisted development rules | One bounded change, persistent context pack, human review of architecture and security. | `AGENTS.md`, `docs/agent/` | implemented |
-| Repository and deployment shape | Intended layout is `apps/platform-service`, `apps/worker`, `apps/console`, contracts, docs, and tests. | `apps/platform-service` and `apps/worker` skeletons exist; console does not | pending |
+| Repository and deployment shape | Intended layout is `apps/platform-service`, `apps/worker`, `apps/console`, contracts, docs, and tests. | `apps/platform-service`, `apps/worker`, and `apps/console` skeletons exist | pending |
 | Milestone 0 — product contract | PRD, context map, data classification, ADR template, threat model. No application code. | PRD, context map, data classification, ADR template, and threat model exist; default churn label remains BLOCKED | pending |
 | Milestone 1 — repo, local env, CI | Buildable modular monolith, Compose, Testcontainers, canonical verify, CI. | Testcontainers, Compose, `./scripts/verify.sh`, and GitHub Actions verify workflow exist | implemented |
 | Milestone 2 — identity and tenancy | OIDC, API keys, immutable TenantContext, RBAC, audit, tenant-scoped schema. | none | pending |
 | Milestone 3 — contract-first ingestion | OpenAPI plus idempotent `POST /v1/events:batch`. | OpenAPI + tenant-scoped PostgreSQL ingest | pending |
 | Milestone 4 — durable event processing | Tenant-scoped event persistence and replay. Local SQS/S3 or LocalStack approved by ADR-001. | Events persist, enqueue, and the worker rejects missing/mismatched tenant tags | pending |
 | Milestone 5 — features and rules score | Versioned features and cold-start rules scoring with history. | shared `RULES_BASELINE` current score exists; feature registry and history are later | pending |
-| Milestone 6 — prediction API and console | Tenant-safe prediction reads and Angular onboarding/risk console. | prediction GET endpoints and cursor pagination exist; no `apps/console` | pending |
+| Milestone 6 — prediction API and console | Tenant-safe prediction reads and Angular onboarding/risk console. | prediction GET endpoints, cursor pagination, and console shell exist; console does not fetch scores yet | pending |
 | Milestone 7 — webhook reliability | Outbox, signing, retry, DLQ, replay. | none | pending |
 | Milestone 8 — learned-model pipeline | Point-in-time Python training and gated promotion. | none | pending |
 | Milestone 9 — optional explanations | Provider interface; Bedrock adapter deferred unless approved. | none | deferred |

@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-019 — Extract shared rules scorer.
+Last updated after PR-020 — Angular console skeleton.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, LocalStack SQS publish, `RULES_BASELINE` scores, and cursor-paginated prediction reads. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, rejects missing or mismatched tenant tags, and refreshes tenant-scoped scores. Both call `/libs/rules-scoring` for the rules engine. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, LocalStack SQS publish, `RULES_BASELINE` scores, and cursor-paginated prediction reads. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, rejects missing or mismatched tenant tags, and refreshes tenant-scoped scores. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-019-shared-scorer-9d98`
+- Branch: `cursor/pr-020-console-skeleton-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
 - Threat model: `docs/security/threat-model.md`
@@ -14,8 +14,8 @@ Last updated after PR-019 — Extract shared rules scorer.
 - Language: Java 21
 - Build: Maven wrapper, Spring Boot 4.1.1 parent, Spring Cloud 2025.1.2 BOM
 - Frozen legacy modules: `common-models`, `core-service`, `api-gateway`
-- Target modules: `/apps/platform-service` (skeleton), `/apps/worker` (skeleton), `/apps/console` (not created)
-- Frontend: none
+- Target modules: `/apps/platform-service` (skeleton), `/apps/worker` (skeleton), `/apps/console` (onboarding/risk shell)
+- Frontend: Angular console skeleton
 - Database migrations: `V1__platform_bootstrap.sql`, `V2__tenant_scoped_events.sql`, `V3__account_scores.sql`
 - CI: `.github/workflows/verify.yml` runs `./scripts/verify.sh`
 - Canonical verify command: `./scripts/verify.sh`
@@ -26,12 +26,12 @@ Last updated after PR-019 — Extract shared rules scorer.
 | --- | --- |
 | Product docs | ADR-001, PRD, data classification, ADR template, threat model, events:batch, and cursor-paginated prediction-read OpenAPI exist |
 | Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, SQS enqueue, shared `RULES_BASELINE` scores, and cursor-paginated prediction reads; `worker` consumes tenant-tagged messages and refreshes scores |
-| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, and rescore tests |
+| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, and rescore tests; console onboarding/risk contract tests |
 | Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, and V3 `account_scores`; worker uses the same PostgreSQL store without owning Flyway |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
-| Angular console | none |
+| Angular console | onboarding and risk routes; no prediction fetch yet |
 
 ## Known contradictions
 
@@ -43,6 +43,12 @@ Still open:
 4. Foundation PRs were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
 5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 6. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
+
+## What PR-020 added
+
+- `/apps/console` Angular shell with `/onboarding` and `/risk`
+- No client-side tenant switch and no MongoDB or Redis
+- `./scripts/verify.sh` runs console tests and `ng build`
 
 ## What PR-019 added
 
