@@ -4,18 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-020 — Angular console skeleton**
+**PR-021 — Console lists current predictions**
 
 - Capacity: S
-- Why next: Prediction reads exist; operators still have no console
-- Main dependency: PR-019
+- Why next: The console shell exists but does not read tenant scores
+- Main dependency: PR-020
 - Out of scope: learned models, webhooks, Redis, MongoDB, production IdP
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-021 | Score history | S | PR-020 | Versioned score rows beyond current snapshot |
+| PR-022 | Score history | S | PR-021 | Versioned score rows beyond current snapshot |
 
 ## Completed
 
@@ -43,7 +43,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-016 | Predictions read API | implemented |
 | PR-017 | Worker rescoring from tenant-tagged messages | implemented |
 | PR-018 | Prediction list cursor pagination | implemented |
-| PR-019 | Extract shared rules scorer | implemented in this branch |
+| PR-019 | Extract shared rules scorer | implemented |
+| PR-020 | Angular console skeleton | implemented in this branch |
 
 ## Intentionally not scheduled
 
