@@ -152,6 +152,13 @@ require_heading "contracts/openapi/churn-api.yaml" "500"
 require_file "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventBatchTests.java"
 require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventBatchTests.java" "/v1/events:batch"
 
+require_file "apps/platform-service/src/main/resources/db/migration/V2__tenant_scoped_events.sql"
+require_heading "apps/platform-service/src/main/resources/db/migration/V2__tenant_scoped_events.sql" "tenant_id"
+require_heading "apps/platform-service/src/main/resources/db/migration/V2__tenant_scoped_events.sql" "event_id"
+require_heading "apps/platform-service/src/main/resources/db/migration/V2__tenant_scoped_events.sql" "ingest_receipts"
+require_file "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventPersistenceTests.java"
+require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventPersistenceTests.java" "ingested_events"
+
 require_file ".github/workflows/verify.yml"
 require_heading ".github/workflows/verify.yml" "./scripts/verify.sh"
 require_heading ".github/workflows/verify.yml" "contents: read"
