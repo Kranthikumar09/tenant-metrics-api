@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-022R — transactional accepted-event outbox.
+Last updated after PR-023R — bounded worker dead-letter redrive.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-022r-transactional-outbox-9d98`
+- Branch: `cursor/pr-023r-worker-dlq-redrive-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
 - Threat model: `docs/security/threat-model.md`
@@ -26,7 +26,7 @@ Last updated after PR-022R — transactional accepted-event outbox.
 | --- | --- |
 | Product docs | ADR-001, PRD, data classification, ADR template, threat model, events:batch, and cursor-paginated prediction-read OpenAPI exist |
 | Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, transactional outbox delivery to SQS, shared `RULES_BASELINE` scores, and cursor-paginated prediction reads; `worker` retains valid messages until their persisted event can be scored and permanently rejects invalid tenant tags |
-| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, transactional-outbox enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, retry, successful-delete, and rescore tests; console onboarding/risk contract tests |
+| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, transactional-outbox enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, bounded DLQ redrive, successful-delete, and rescore tests; console onboarding/risk contract tests |
 | Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, V3 `account_scores`, and V4 `accepted_event_outbox`; worker uses the same PostgreSQL store without owning Flyway |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
@@ -43,6 +43,13 @@ Still open:
 4. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 5. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
 
+## What PR-023R added
+
+- Worker startup creates `accepted-events-dlq` before the source queue and attaches a native SQS redrive policy
+- `platform.events.queue.max-receive-count` bounds delivery attempts at five by default and remains configurable
+- LocalStack integration proves an unavailable persisted event moves to the DLQ and retains its `tenant_id` message attribute
+- Replay tooling, production alerting, and customer-facing queue controls remain out of scope
+
 ## What PR-022R added
 
 - Accepted events and their SQS delivery intent are committed together in PostgreSQL
@@ -55,7 +62,7 @@ Still open:
 - Valid tenant-tagged messages remain retryable when their PostgreSQL event is not yet visible
 - A message is recorded as accepted and deleted only after its score refresh succeeds
 - Missing or mismatched tenant tags remain permanent rejections; a missing `event_id` is reported as `missing_event`
-- The ingestion publish path still lacks a transactional outbox; that is the next stabilization priority
+- PR-022R closed the ingestion publish gap with the PostgreSQL transactional outbox
 
 ## What PR-020 added
 

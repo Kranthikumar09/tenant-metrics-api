@@ -17,10 +17,13 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
+import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 
 @Component
 @EnableConfigurationProperties(EventQueueProperties.class)
@@ -111,7 +114,32 @@ class AcceptedEventPoller {
 				.credentialsProvider(StaticCredentialsProvider.create(
 						AwsBasicCredentials.create(properties.getAccessKey(), properties.getSecretKey())))
 				.build();
-		sqsClient.createQueue(CreateQueueRequest.builder().queueName(properties.getName()).build());
-		queueUrl = sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(properties.getName()).build()).queueUrl();
+		String deadLetterQueueUrl = createQueue(properties.getDeadLetterName());
+		String deadLetterQueueArn = sqsClient.getQueueAttributes(GetQueueAttributesRequest.builder()
+				.queueUrl(deadLetterQueueUrl)
+				.attributeNames(QueueAttributeName.QUEUE_ARN)
+				.build())
+				.attributes()
+				.get(QueueAttributeName.QUEUE_ARN);
+		queueUrl = createQueue(properties.getName());
+		sqsClient.setQueueAttributes(SetQueueAttributesRequest.builder()
+				.queueUrl(queueUrl)
+				.attributes(Map.of(
+						QueueAttributeName.REDRIVE_POLICY,
+						redrivePolicy(deadLetterQueueArn, properties.getMaxReceiveCount())))
+				.build());
+	}
+
+	private String createQueue(String queueName) {
+		sqsClient.createQueue(CreateQueueRequest.builder().queueName(queueName).build());
+		return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).queueUrl();
+	}
+
+	private static String redrivePolicy(String deadLetterQueueArn, int maxReceiveCount) {
+		if (maxReceiveCount < 1) {
+			throw new IllegalArgumentException("platform.events.queue.max-receive-count must be at least 1");
+		}
+		return "{\"deadLetterTargetArn\":\"%s\",\"maxReceiveCount\":\"%d\"}"
+				.formatted(deadLetterQueueArn, maxReceiveCount);
 	}
 }
