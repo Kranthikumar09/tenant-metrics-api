@@ -22,5 +22,8 @@ record PredictionResponse(
 		@JsonProperty("explanation_status") String explanationStatus) {
 }
 
-record PredictionListResponse(List<PredictionResponse> items) {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+record PredictionListResponse(
+		List<PredictionResponse> items,
+		@JsonProperty("next_cursor") String nextCursor) {
 }

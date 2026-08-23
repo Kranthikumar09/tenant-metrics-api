@@ -1,11 +1,16 @@
 package com.tenantmetrics.platform.scoring;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -31,12 +36,56 @@ class PredictionController {
 				.orElseGet(() -> problem(HttpStatus.NOT_FOUND, "prediction not found"));
 	}
 
+	static final int DEFAULT_PAGE_SIZE = 50;
+	static final int MAX_PAGE_SIZE = 500;
+
 	@GetMapping("/v1/predictions")
-	PredictionListResponse listPredictions(HttpServletRequest request) {
+	ResponseEntity<?> listPredictions(
+			@RequestParam(name = "limit", required = false) Integer limit,
+			@RequestParam(name = "cursor", required = false) String cursor,
+			HttpServletRequest request) {
 		TenantContext tenant = requireTenant(request);
-		return new PredictionListResponse(accountScoreStore.listByTenant(tenant.tenantId()).stream()
-				.map(PredictionController::toResponse)
-				.toList());
+		int pageSize = limit == null ? DEFAULT_PAGE_SIZE : limit;
+		if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+			return problem(HttpStatus.BAD_REQUEST, "limit must be between 1 and 500");
+		}
+		String afterAccountId;
+		try {
+			afterAccountId = decodeCursor(cursor);
+		}
+		catch (IllegalArgumentException ex) {
+			return problem(HttpStatus.BAD_REQUEST, "cursor is invalid");
+		}
+		List<AccountScore> rows = accountScoreStore.listByTenant(tenant.tenantId(), afterAccountId, pageSize + 1);
+		boolean hasMore = rows.size() > pageSize;
+		if (hasMore) {
+			rows = List.copyOf(rows.subList(0, pageSize));
+		}
+		String nextCursor = hasMore ? encodeCursor(rows.getLast().accountExternalId()) : null;
+		return ResponseEntity.ok(new PredictionListResponse(
+				rows.stream().map(PredictionController::toResponse).toList(),
+				nextCursor));
+	}
+
+	private static String encodeCursor(String accountExternalId) {
+		return Base64.getUrlEncoder().withoutPadding()
+				.encodeToString(accountExternalId.getBytes(StandardCharsets.UTF_8));
+	}
+
+	private static String decodeCursor(String cursor) {
+		if (cursor == null || cursor.isBlank()) {
+			return null;
+		}
+		try {
+			String decoded = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
+			if (decoded.isBlank() || decoded.length() > 128) {
+				throw new IllegalArgumentException("cursor");
+			}
+			return decoded;
+		}
+		catch (IllegalArgumentException ex) {
+			throw new IllegalArgumentException("cursor");
+		}
 	}
 
 	private static PredictionResponse toResponse(AccountScore score) {

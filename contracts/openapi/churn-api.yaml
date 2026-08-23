@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Churn Intelligence API
   version: 0.1.0
-  description: Versioned contract. This revision defines POST /v1/events:batch and tenant-scoped prediction reads.
+  description: Versioned contract. This revision defines POST /v1/events:batch and cursor-paginated tenant-scoped prediction reads.
 servers:
   - url: /
 security:
@@ -82,14 +82,35 @@ paths:
   /v1/predictions:
     get:
       operationId: listPredictions
-      summary: List current tenant-scoped scores
+      summary: List current tenant-scoped scores with a stable cursor
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque cursor from the previous page. Tenant is not encoded in the cursor.
       responses:
         '200':
-          description: Up to 500 current scores for the verified tenant
+          description: A page of current scores for the verified tenant
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PredictionList'
+        '400':
+          description: Invalid limit or cursor
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
         '401':
           description: Missing or unknown API key
 components:
@@ -196,6 +217,9 @@ components:
           maxItems: 500
           items:
             $ref: '#/components/schemas/Prediction'
+        next_cursor:
+          type: string
+          description: Present when another page exists. Decode is server-side only.
     ProblemDetails:
       type: object
       required: [status]
