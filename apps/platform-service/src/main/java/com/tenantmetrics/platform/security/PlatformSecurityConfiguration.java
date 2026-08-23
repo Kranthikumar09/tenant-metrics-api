@@ -47,7 +47,11 @@ public class PlatformSecurityConfiguration {
 				StringUtils.hasText(request.getHeader("X-Api-Key"));
 
 		http
-				.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+				.authorizeHttpRequests(authorize -> authorize
+						.requestMatchers("/actuator/health", "/actuator/health/**", "/error").permitAll()
+						.requestMatchers("/oauth2/**", "/login/**").permitAll()
+						.requestMatchers("/v1/**").permitAll()
+						.anyRequest().denyAll())
 				.csrf(csrf -> csrf
 						.csrfTokenRepository(csrfRepository)
 						.csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())

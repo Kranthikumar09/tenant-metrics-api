@@ -1,6 +1,8 @@
 package com.tenantmetrics.platform;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,17 +10,21 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.tenantmetrics.platform.security.TenantMembershipResolver;
 import com.tenantmetrics.platform.security.TenantSessionPrincipal;
 
 import jakarta.servlet.http.Cookie;
@@ -41,6 +47,9 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	private TenantMembershipResolver membershipResolver;
 
 	@Test
 	void sessionIsPersistedInPostgresWithProductionCookieAttributes() throws Exception {
@@ -86,7 +95,10 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 				.andExpect(status().isOk())
 				.andReturn();
 		Cookie sessionCookie = requiredCookie(session, "__Host-tm_session");
-		Cookie csrfCookie = requiredCookie(session, "XSRF-TOKEN");
+		MvcResult csrf = mockMvc.perform(get("/actuator/health"))
+				.andExpect(status().isOk())
+				.andReturn();
+		Cookie csrfCookie = requiredCookie(csrf, "XSRF-TOKEN");
 
 		mockMvc.perform(post("/v1/events:batch")
 					.with(tenantSession("user-a", "tenant-a"))
@@ -137,9 +149,37 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 		return cookie;
 	}
 
-	private static RequestPostProcessor tenantSession(String subject, String tenantId) {
+	private RequestPostProcessor tenantSession(String subject, String tenantId) {
+		String issuer = "https://issuer.test/browser-session";
+		UUID userId = UUID.nameUUIDFromBytes((issuer + "|" + subject).getBytes(StandardCharsets.UTF_8));
+		jdbcTemplate.update(
+				"""
+						INSERT INTO tenants (tenant_id, display_name, enabled)
+						VALUES (?, ?, TRUE)
+						ON CONFLICT (tenant_id) DO UPDATE SET enabled = TRUE
+						""",
+				tenantId,
+				tenantId);
+		jdbcTemplate.update(
+				"""
+						INSERT INTO platform_users (user_id, oidc_issuer, oidc_subject, enabled)
+						VALUES (?, ?, ?, TRUE)
+						ON CONFLICT (oidc_issuer, oidc_subject) DO UPDATE SET enabled = TRUE
+						""",
+				userId,
+				issuer,
+				subject);
+		jdbcTemplate.update(
+				"""
+						INSERT INTO tenant_memberships (user_id, tenant_id, role, enabled)
+						VALUES (?, ?, 'MEMBER', TRUE)
+						ON CONFLICT (user_id, tenant_id) DO UPDATE SET enabled = TRUE
+						""",
+				userId,
+				tenantId);
+		TenantSessionPrincipal principal = membershipResolver.resolve(issuer, subject).orElseThrow();
 		Authentication authentication = new UsernamePasswordAuthenticationToken(
-				new TenantSessionPrincipal(subject, tenantId), "N/A", List.of());
+				principal, "N/A", List.of());
 		return authentication(authentication);
 	}
 
@@ -163,6 +203,17 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 	static class SessionProbeConfiguration {
 
 		@Bean
+		@Order(0)
+		SecurityFilterChain sessionProbeSecurityFilterChain(HttpSecurity http) throws Exception {
+			http
+					.securityMatcher("/test/session-probe")
+					.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+					.csrf(AbstractHttpConfigurer::disable)
+					.requestCache(cache -> cache.disable());
+			return http.build();
+		}
+
+		@Bean
 		SessionProbeController sessionProbeController() {
 			return new SessionProbeController();
 		}
@@ -172,9 +223,8 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 	static class SessionProbeController {
 
 		@GetMapping("/test/session-probe")
-		String createSession(HttpSession session, CsrfToken csrfToken) {
+		String createSession(HttpSession session) {
 			session.setAttribute("probe", "persisted");
-			csrfToken.getToken();
 			return "ok";
 		}
 	}
