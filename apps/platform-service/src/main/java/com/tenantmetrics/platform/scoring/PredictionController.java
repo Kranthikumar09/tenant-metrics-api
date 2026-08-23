@@ -1,6 +1,7 @@
 package com.tenantmetrics.platform.scoring;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
@@ -77,8 +78,12 @@ class PredictionController {
 			return null;
 		}
 		try {
-			String decoded = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
-			if (decoded.isBlank() || decoded.length() > 128) {
+			byte[] bytes = Base64.getUrlDecoder().decode(cursor);
+			String decoded = new String(bytes, StandardCharsets.UTF_8);
+			if (!Arrays.equals(bytes, decoded.getBytes(StandardCharsets.UTF_8))
+					|| decoded.isBlank()
+					|| decoded.length() > 128
+					|| decoded.codePoints().anyMatch(Character::isISOControl)) {
 				throw new IllegalArgumentException("cursor");
 			}
 			return decoded;
