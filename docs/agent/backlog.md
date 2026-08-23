@@ -4,18 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-016 — Predictions read API**
+**PR-017 — Worker rescoring from tenant-tagged messages**
 
 - Capacity: S
-- Why next: Rules scores persist; tenants still cannot retrieve them through the public API
-- Main dependency: PR-015
+- Why next: Scores refresh on ingest; the worker still does not rescore accepted messages
+- Main dependency: PR-016
 - Out of scope: learned models, webhooks, Redis, MongoDB, production IdP
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-017 | Worker rescoring from tenant-tagged messages | S | PR-016 | Optional async refresh; keep TenantContext path |
+| PR-018 | Prediction list cursor pagination | S | PR-017 | Filters and stable cursors |
 
 ## Completed
 
@@ -39,7 +39,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-012 | Persist tenant-scoped events | implemented |
 | PR-013 | Enqueue accepted events for the worker | implemented |
 | PR-014 | Worker consumes tenant-tagged event messages | implemented |
-| PR-015 | Rules-based cold-start score | implemented in this branch |
+| PR-015 | Rules-based cold-start score | implemented |
+| PR-016 | Predictions read API | implemented in this branch |
 
 ## Intentionally not scheduled
 
