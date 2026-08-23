@@ -134,6 +134,13 @@ forbid_text "apps/worker/pom.xml" "spring-boot-starter-webmvc"
 require_file "apps/worker/src/main/java/com/tenantmetrics/worker/WorkerApplication.java"
 require_heading "apps/worker/src/main/java/com/tenantmetrics/worker/WorkerApplication.java" "@SpringBootApplication"
 
+require_file "apps/worker/src/test/java/com/tenantmetrics/worker/EventConsumeTests.java"
+require_heading "apps/worker/src/test/java/com/tenantmetrics/worker/EventConsumeTests.java" "mismatched_tenant"
+require_heading "apps/worker/src/test/java/com/tenantmetrics/worker/EventConsumeTests.java" "missing_tenant"
+require_file "apps/worker/src/main/java/com/tenantmetrics/worker/TenantTaggedEventHandler.java"
+require_heading "apps/worker/src/main/java/com/tenantmetrics/worker/TenantTaggedEventHandler.java" "mismatched_tenant"
+require_heading "apps/worker/src/main/java/com/tenantmetrics/worker/TenantTaggedEventHandler.java" "missing_tenant"
+
 require_file "apps/platform-service/src/main/java/com/tenantmetrics/platform/tenancy/TenantContext.java"
 require_file "apps/platform-service/src/main/java/com/tenantmetrics/platform/tenancy/TenantResolutionFilter.java"
 require_file "apps/platform-service/src/test/java/com/tenantmetrics/platform/TenantIsolationTests.java"
