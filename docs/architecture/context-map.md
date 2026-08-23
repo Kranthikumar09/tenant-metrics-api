@@ -12,14 +12,14 @@ Short map of what exists today versus the target locked by `ADR-001`. This is no
 | `core-service` | Empty Spring Boot web app with JPA, PostgreSQL driver, and MongoDB starters | Frozen legacy module. Do not treat as `apps/worker` or `platform-service`. |
 | `api-gateway` | Empty Spring Cloud Gateway app | Frozen legacy module. Do not treat as the public monolith. |
 
-`/apps/platform-service` boots with JDBC and Flyway against Testcontainers PostgreSQL. `/apps/worker` boots as a non-web same-version process. `/apps/console` is an Angular onboarding and risk shell. Local Compose provides PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` implements tenant-safe ingestion, rules scoring, prediction reads, PostgreSQL sessions, CSRF, and server-side tenant membership resolution. `/apps/worker` is a non-web same-version SQS consumer with tenant-tag validation, rescoring, retry, and DLQ behavior. `/apps/console` remains an Angular onboarding and risk shell. Local Compose provides PostgreSQL and LocalStack SQS/S3.
 
 ## Target modules
 
 | Path | Role | Status |
 | --- | --- | --- |
-| `/apps/platform-service` | Spring Boot modular monolith | JDBC + Flyway + Testcontainers PostgreSQL |
-| `/apps/worker` | Same-version background processor | non-web Spring Boot skeleton |
+| `/apps/platform-service` | Spring Boot modular monolith | tenant/session foundation, ingest, rules scoring, and prediction reads |
+| `/apps/worker` | Same-version background processor | tenant-tagged event consumption, rescoring, retry, and DLQ |
 | `/libs/rules-scoring` | Shared RULES_BASELINE domain jar | used by platform-service and worker |
 | `/apps/console` | Angular application | onboarding and risk shell |
 
