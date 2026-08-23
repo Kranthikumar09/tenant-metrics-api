@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-014 — Worker consume.
+Last updated after PR-015 — Rules-based cold-start score.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, and LocalStack SQS publish for accepted events. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages and rejects missing or mismatched tenant tags. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, LocalStack SQS publish, and a transparent `RULES_BASELINE` account score. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages and rejects missing or mismatched tenant tags. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-014-worker-consume-9d98`
+- Branch: `cursor/pr-015-rules-score-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
 - Threat model: `docs/security/threat-model.md`
@@ -16,7 +16,7 @@ Last updated after PR-014 — Worker consume.
 - Frozen legacy modules: `common-models`, `core-service`, `api-gateway`
 - Target modules: `/apps/platform-service` (skeleton), `/apps/worker` (skeleton), `/apps/console` (not created)
 - Frontend: none
-- Database migrations: `V1__platform_bootstrap.sql`, `V2__tenant_scoped_events.sql`
+- Database migrations: `V1__platform_bootstrap.sql`, `V2__tenant_scoped_events.sql`, `V3__account_scores.sql`
 - CI: `.github/workflows/verify.yml` runs `./scripts/verify.sh`
 - Canonical verify command: `./scripts/verify.sh`
 
@@ -25,9 +25,9 @@ Last updated after PR-014 — Worker consume.
 | Area | State |
 | --- | --- |
 | Product docs | ADR-001, PRD, data classification, ADR template, threat model, and events:batch OpenAPI exist |
-| Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, and SQS enqueue; `worker` consumes tenant-tagged SQS messages |
-| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, and enqueue; worker context-load, non-web assertion, and consume tests |
-| Persistence | Flyway V1 bootstrap and V2 `ingested_events` / `ingest_receipts`; worker has no datastore |
+| Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, SQS enqueue, and `RULES_BASELINE` scores; `worker` consumes tenant-tagged SQS messages |
+| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, enqueue, and rules-score; worker context-load, non-web assertion, and consume tests |
+| Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, and V3 `account_scores`; worker has no datastore |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
@@ -43,6 +43,13 @@ Still open:
 4. Foundation PRs were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
 5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 6. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
+
+## What PR-015 added
+
+- Transparent `RULES_BASELINE` health score after each newly accepted event
+- `risk_probability` is always null; no churn label and no learned model
+- Scores are tenant-scoped by `TenantContext`; client tenant claims cannot retag them
+- No prediction read API yet
 
 ## What PR-014 added
 
@@ -96,4 +103,4 @@ Still open:
 4. `docs/security/threat-model.md`
 5. `docs/architecture/ADRs/ADR-001-mvp-architecture.md`
 6. `docs/architecture/context-map.md`
-7. `apps/platform-service` and `apps/worker` only, unless the task is about frozen modules
+7. `apps/platform-service` scoring and events packages, plus `apps/worker`, unless the task is about frozen modules

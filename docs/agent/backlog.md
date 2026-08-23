@@ -4,18 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-015 — Rules-based cold-start score**
+**PR-016 — Predictions read API**
 
 - Capacity: S
-- Why next: Events are ingested, persisted, and consumed; scoring is the next customer output
-- Main dependency: PR-014
+- Why next: Rules scores persist; tenants still cannot retrieve them through the public API
+- Main dependency: PR-015
 - Out of scope: learned models, webhooks, Redis, MongoDB, production IdP
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-016 | Predictions read API | S | PR-015 | Tenant-scoped reads |
+| PR-017 | Worker rescoring from tenant-tagged messages | S | PR-016 | Optional async refresh; keep TenantContext path |
 
 ## Completed
 
@@ -38,7 +38,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-011 | Contract-first OpenAPI and `POST /v1/events:batch` | implemented |
 | PR-012 | Persist tenant-scoped events | implemented |
 | PR-013 | Enqueue accepted events for the worker | implemented |
-| PR-014 | Worker consumes tenant-tagged event messages | implemented in this branch |
+| PR-014 | Worker consumes tenant-tagged event messages | implemented |
+| PR-015 | Rules-based cold-start score | implemented in this branch |
 
 ## Intentionally not scheduled
 
