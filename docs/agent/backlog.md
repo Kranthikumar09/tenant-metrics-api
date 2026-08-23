@@ -4,19 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-025R — Add the PostgreSQL-backed browser session and CSRF foundation**
+**PR-026R — Add a provider-neutral OIDC login adapter**
 
 - Capacity: S
-- Why next: ADR-002 is locked; the server-side session boundary must exist before OIDC or console prediction-fetch code
-- Main dependency: PR-024R
-- In scope: Spring Security and Spring Session JDBC foundation, one PostgreSQL migration, production cookie/CSRF configuration, API-key compatibility, and tenant-negative tests using a test principal
-- Out of scope: production IdP setup, Angular prediction fetch, tenant switching, RBAC expansion, Redis, MongoDB, production deployment
+- Why next: the server-side session, CSRF, cookie, and TenantContext boundaries now exist; login is the remaining blocker before the console can call prediction APIs
+- Main dependency: PR-025R
+- In scope: provider-neutral OIDC client adapter, Authorization Code plus PKCE security contract, server-side mapping into `TenantSessionPrincipal`, and failure tests without production credentials
+- Out of scope: selecting or configuring a production IdP tenant, Angular prediction fetch, tenant switching, RBAC expansion, Redis, MongoDB, production deployment
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-026R | Add provider-neutral OIDC login adapter | S | PR-025R | Production provider and credentials remain a separate approval |
 | PR-021 | Console lists current predictions | S | PR-026R | Use the server session; never place API keys or OAuth tokens in Angular storage |
 | PR-023 | Score history | S | PR-021 | Versioned score rows beyond current snapshot |
 
@@ -51,7 +50,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-021R | Do not acknowledge worker messages when persisted event is unavailable | implemented |
 | PR-022R | Persist event enqueue through a transactional outbox | implemented |
 | PR-023R | Add a worker dead-letter queue and bounded redrive policy | implemented |
-| PR-024R | Lock the console browser authentication and session contract | implemented in this branch |
+| PR-024R | Lock the console browser authentication and session contract | implemented |
+| PR-025R | Add the PostgreSQL-backed browser session and CSRF foundation | implemented in this branch |
 
 ## Intentionally not scheduled
 
