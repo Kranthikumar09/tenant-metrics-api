@@ -8,6 +8,8 @@ class EventQueueProperties {
 	private String endpoint = "http://127.0.0.1:4566";
 	private String region = "us-east-1";
 	private String name = "accepted-events";
+	private String deadLetterName = "accepted-events-dlq";
+	private int maxReceiveCount = 5;
 	private String accessKey = "test";
 	private String secretKey = "test";
 	private boolean pollEnabled = true;
@@ -34,6 +36,22 @@ class EventQueueProperties {
 
 	void setName(String name) {
 		this.name = name;
+	}
+
+	String getDeadLetterName() {
+		return deadLetterName;
+	}
+
+	void setDeadLetterName(String deadLetterName) {
+		this.deadLetterName = deadLetterName;
+	}
+
+	int getMaxReceiveCount() {
+		return maxReceiveCount;
+	}
+
+	void setMaxReceiveCount(int maxReceiveCount) {
+		this.maxReceiveCount = maxReceiveCount;
 	}
 
 	String getAccessKey() {
