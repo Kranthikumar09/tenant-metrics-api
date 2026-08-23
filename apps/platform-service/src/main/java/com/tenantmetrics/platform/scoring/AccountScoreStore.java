@@ -1,7 +1,10 @@
 package com.tenantmetrics.platform.scoring;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -29,6 +32,35 @@ class AccountScoreStore {
 						rs.getTimestamp("occurred_at").toInstant()),
 				tenantId,
 				accountExternalId);
+	}
+
+	Optional<AccountScore> find(String tenantId, String accountExternalId) {
+		return jdbcTemplate.query(
+				"""
+						SELECT tenant_id, account_external_id, eligibility, health_score, risk_band,
+							risk_probability, score_version, feature_version, drivers, scored_at, freshness_seconds
+						FROM account_scores
+						WHERE tenant_id = ? AND account_external_id = ?
+						""",
+				this::mapScore,
+				tenantId,
+				accountExternalId)
+				.stream()
+				.findFirst();
+	}
+
+	List<AccountScore> listByTenant(String tenantId) {
+		return jdbcTemplate.query(
+				"""
+						SELECT tenant_id, account_external_id, eligibility, health_score, risk_band,
+							risk_probability, score_version, feature_version, drivers, scored_at, freshness_seconds
+						FROM account_scores
+						WHERE tenant_id = ?
+						ORDER BY account_external_id
+						LIMIT 500
+						""",
+				this::mapScore,
+				tenantId);
 	}
 
 	void upsert(AccountScore score) {
@@ -60,5 +92,20 @@ class AccountScoreStore {
 				score.driversJson(),
 				Timestamp.from(score.scoredAt()),
 				score.freshnessSeconds());
+	}
+
+	private AccountScore mapScore(ResultSet rs, int rowNum) throws SQLException {
+		return new AccountScore(
+				rs.getString("tenant_id"),
+				rs.getString("account_external_id"),
+				rs.getString("eligibility"),
+				rs.getObject("health_score", Integer.class),
+				rs.getString("risk_band"),
+				rs.getObject("risk_probability", Double.class),
+				rs.getString("score_version"),
+				rs.getString("feature_version"),
+				rs.getString("drivers"),
+				rs.getTimestamp("scored_at").toInstant(),
+				rs.getObject("freshness_seconds", Integer.class));
 	}
 }
