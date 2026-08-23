@@ -4,18 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-012 — Persist tenant-scoped events**
+**PR-013 — Enqueue accepted events for the worker**
 
 - Capacity: S
-- Why next: Ingest exists in memory; durable writes must bind `tenant_id`
-- Main dependency: PR-011
+- Why next: Events persist; the worker still has no work to consume
+- Main dependency: PR-012
 - Out of scope: scoring, webhooks, Redis, MongoDB, production IdP
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-013 | Enqueue accepted events for the worker | S | PR-012 | LocalStack SQS |
+| PR-014 | Worker consumes tenant-tagged event messages | S | PR-013 | LocalStack SQS |
 
 ## Completed
 
@@ -35,7 +35,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-007 | LocalStack-compatible SQS/S3 on Compose | implemented |
 | PR-009 | `/apps/worker` same-version process skeleton | implemented |
 | PR-010 | Identity and immutable TenantContext | implemented |
-| PR-011 | Contract-first OpenAPI and `POST /v1/events:batch` | implemented in this branch |
+| PR-011 | Contract-first OpenAPI and `POST /v1/events:batch` | implemented |
+| PR-012 | Persist tenant-scoped events | implemented in this branch |
 
 ## Intentionally not scheduled
 
