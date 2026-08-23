@@ -4,19 +4,20 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-024R — Lock the console browser authentication and session contract**
+**PR-025R — Add the PostgreSQL-backed browser session and CSRF foundation**
 
-- Capacity: XS
-- Why next: The console cannot safely call prediction APIs until browser authentication is defined; API keys must not be stored in Angular
-- Main dependency: PR-020
-- Recommended decision: same-origin, server-managed session with Secure, HttpOnly cookies; document the contract before implementation
-- Out of scope: authentication code, production IdP setup, console prediction fetch, Redis, MongoDB, production deployment
+- Capacity: S
+- Why next: ADR-002 is locked; the server-side session boundary must exist before OIDC or console prediction-fetch code
+- Main dependency: PR-024R
+- In scope: Spring Security and Spring Session JDBC foundation, one PostgreSQL migration, production cookie/CSRF configuration, API-key compatibility, and tenant-negative tests using a test principal
+- Out of scope: production IdP setup, Angular prediction fetch, tenant switching, RBAC expansion, Redis, MongoDB, production deployment
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-021 | Console lists current predictions | S | PR-024R | BLOCKED until browser authentication/session behavior is approved |
+| PR-026R | Add provider-neutral OIDC login adapter | S | PR-025R | Production provider and credentials remain a separate approval |
+| PR-021 | Console lists current predictions | S | PR-026R | Use the server session; never place API keys or OAuth tokens in Angular storage |
 | PR-023 | Score history | S | PR-021 | Versioned score rows beyond current snapshot |
 
 ## Completed
@@ -49,7 +50,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-020 | Angular console skeleton | implemented |
 | PR-021R | Do not acknowledge worker messages when persisted event is unavailable | implemented |
 | PR-022R | Persist event enqueue through a transactional outbox | implemented |
-| PR-023R | Add a worker dead-letter queue and bounded redrive policy | implemented in this branch |
+| PR-023R | Add a worker dead-letter queue and bounded redrive policy | implemented |
+| PR-024R | Lock the console browser authentication and session contract | implemented in this branch |
 
 ## Intentionally not scheduled
 

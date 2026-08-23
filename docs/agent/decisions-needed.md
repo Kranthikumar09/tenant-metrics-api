@@ -22,11 +22,9 @@ ADR-001 freezes `api-gateway`, `core-service`, and `common-models`. It does not 
 
 The modular monolith target is already accepted; only the disposal of placeholders remains open.
 
-### D-007 — Console browser authentication and session
+### D-008 — Production OIDC provider and tenant configuration
 
-The Angular console must not persist tenant API keys in browser storage. Prediction reads remain blocked until the browser-to-platform authentication and session contract is approved.
-
-Recommended direction: serve the console and platform API from the same site, exchange identity for a short-lived server-managed session, and use Secure, HttpOnly, SameSite cookies with CSRF protection. PR-024R should record the decision before authentication or prediction-fetch code is added.
+ADR-002 defines a provider-neutral OIDC Authorization Code with PKCE contract. The production provider, tenant, client registration, claims mapping, credentials, and redirect domains remain `BLOCKED` and require a separate approval. Do not add production credentials to the repository.
 
 ## Resolved
 
@@ -41,3 +39,7 @@ Resolved by ADR-001: MongoDB is not approved. Redis is not approved unless a lat
 ### D-003 — AWS stack versus MVP
 
 Resolved by ADR-001: PostgreSQL is the primary store. Local SQS/S3 or LocalStack-compatible substitutes are approved. `/apps/worker` is a same-version background process, not a microservice extraction. WAF, API Gateway, Bedrock, Terraform/CDK, and multi-environment cloud accounts remain unapproved.
+
+### D-007 — Console browser authentication and session
+
+Resolved by ADR-002: use a same-origin, server-managed session backed by PostgreSQL, with provider-neutral OIDC Authorization Code plus PKCE, a Secure/HttpOnly session cookie, CSRF protection, and server-side tenant binding. API keys and OAuth tokens must not be stored by Angular.
