@@ -19,6 +19,8 @@ services:
       - "4566:4566"
     environment:
       SERVICES: sqs,s3
+    volumes:
+      - ./localstack/init:/etc/localstack/init/ready.d
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 10s
