@@ -2,6 +2,7 @@ package com.tenantmetrics.platform.events;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -72,5 +73,50 @@ class EventBatchStore {
 				propertiesJson,
 				requestId);
 		return inserted == 1;
+	}
+
+	void insertOutbox(String tenantId, String eventId, String requestId) {
+		jdbcTemplate.update(
+				"""
+						INSERT INTO accepted_event_outbox (tenant_id, event_id, request_id)
+						VALUES (?, ?, ?)
+						""",
+				tenantId,
+				eventId,
+				requestId);
+	}
+
+	List<PendingAcceptedEvent> lockPendingOutbox(int limit) {
+		return jdbcTemplate.query(
+				"""
+						SELECT id, tenant_id, event_id, request_id
+						FROM accepted_event_outbox
+						WHERE published_at IS NULL
+						ORDER BY id
+						LIMIT ?
+						FOR UPDATE SKIP LOCKED
+						""",
+				(rs, rowNum) -> new PendingAcceptedEvent(
+						rs.getLong("id"),
+						rs.getString("tenant_id"),
+						rs.getString("event_id"),
+						rs.getString("request_id")),
+				limit);
+	}
+
+	void markOutboxPublished(long id) {
+		int updated = jdbcTemplate.update(
+				"""
+						UPDATE accepted_event_outbox
+						SET published_at = NOW()
+						WHERE id = ? AND published_at IS NULL
+						""",
+				id);
+		if (updated != 1) {
+			throw new IllegalStateException("pending outbox row was not updated: " + id);
+		}
+	}
+
+	record PendingAcceptedEvent(long id, String tenantId, String eventId, String requestId) {
 	}
 }

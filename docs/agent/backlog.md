@@ -4,12 +4,12 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-022R — Persist event enqueue through a transactional outbox**
+**PR-023R — Add a worker dead-letter queue and bounded redrive policy**
 
 - Capacity: S
-- Why next: Worker retry safety prevents premature acknowledgement, but the database write and queue publish are still not atomic
-- Main dependency: PR-021R
-- Out of scope: console integration, webhooks, DLQ policy, Redis, MongoDB, production deployment
+- Why next: A valid message whose event never appears currently retries forever
+- Main dependency: PR-022R
+- Out of scope: replay UI, production alerting, webhooks, Redis, MongoDB, production deployment
 
 ## Later candidates
 
@@ -46,7 +46,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-018 | Prediction list cursor pagination | implemented |
 | PR-019 | Extract shared rules scorer | implemented |
 | PR-020 | Angular console skeleton | implemented |
-| PR-021R | Do not acknowledge worker messages when persisted event is unavailable | implemented in this branch |
+| PR-021R | Do not acknowledge worker messages when persisted event is unavailable | implemented |
+| PR-022R | Persist event enqueue through a transactional outbox | implemented in this branch |
 
 ## Intentionally not scheduled
 
