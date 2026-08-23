@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Churn Intelligence API
   version: 0.1.0
-  description: Versioned contract. This revision defines POST /v1/events:batch only.
+  description: Versioned contract. This revision defines POST /v1/events:batch and tenant-scoped prediction reads.
 servers:
   - url: /
 security:
@@ -52,6 +52,46 @@ paths:
           description: Missing or unknown API key
         '413':
           description: Request body exceeds the configured size limit
+  /v1/accounts/{account_external_id}/prediction:
+    get:
+      operationId: getAccountPrediction
+      summary: Return the current tenant-scoped rules score for one account
+      parameters:
+        - name: account_external_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      responses:
+        '200':
+          description: Current RULES_BASELINE score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+        '401':
+          description: Missing or unknown API key
+        '404':
+          description: No score for this account in the caller's tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /v1/predictions:
+    get:
+      operationId: listPredictions
+      summary: List current tenant-scoped scores
+      responses:
+        '200':
+          description: Up to 500 current scores for the verified tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionList'
+        '401':
+          description: Missing or unknown API key
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -114,6 +154,48 @@ components:
         duplicates:
           type: integer
           minimum: 0
+    Prediction:
+      type: object
+      additionalProperties: false
+      required: [account_external_id, eligibility, score_version, scored_at, explanation_status]
+      properties:
+        account_external_id:
+          type: string
+        eligibility:
+          type: string
+        health_score:
+          type: integer
+        risk_band:
+          type: string
+        risk_probability:
+          type: number
+          nullable: true
+          description: Always omitted or null for RULES_BASELINE. Not a learned churn probability.
+        score_version:
+          type: string
+        feature_version:
+          type: string
+        drivers:
+          type: array
+          items:
+            type: object
+        scored_at:
+          type: string
+          format: date-time
+        freshness_seconds:
+          type: integer
+        explanation_status:
+          type: string
+          enum: [none]
+    PredictionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/Prediction'
     ProblemDetails:
       type: object
       required: [status]
