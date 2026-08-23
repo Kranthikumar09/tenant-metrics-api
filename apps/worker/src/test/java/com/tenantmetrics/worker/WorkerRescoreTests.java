@@ -26,6 +26,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
@@ -38,6 +39,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 class WorkerRescoreTests {
+
+	private static final String QUEUE_NAME = "accepted-events";
+	private static final String DEAD_LETTER_QUEUE_NAME = "accepted-events-dlq";
+	private static final int MAX_RECEIVE_COUNT = 2;
 
 	static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
@@ -63,7 +68,9 @@ class WorkerRescoreTests {
 		registry.add("spring.flyway.enabled", () -> "false");
 		registry.add("platform.events.queue.endpoint", () -> LOCALSTACK.getEndpoint().toString());
 		registry.add("platform.events.queue.region", LOCALSTACK::getRegion);
-		registry.add("platform.events.queue.name", () -> "accepted-events");
+		registry.add("platform.events.queue.name", () -> QUEUE_NAME);
+		registry.add("platform.events.queue.dead-letter-name", () -> DEAD_LETTER_QUEUE_NAME);
+		registry.add("platform.events.queue.max-receive-count", () -> Integer.toString(MAX_RECEIVE_COUNT));
 		registry.add("platform.events.queue.access-key", LOCALSTACK::getAccessKey);
 		registry.add("platform.events.queue.secret-key", LOCALSTACK::getSecretKey);
 		registry.add("platform.events.queue.poll-enabled", () -> "false");
@@ -86,8 +93,8 @@ class WorkerRescoreTests {
 				.credentialsProvider(StaticCredentialsProvider.create(
 						AwsBasicCredentials.create(LOCALSTACK.getAccessKey(), LOCALSTACK.getSecretKey())))
 				.build();
-		sqsClient.createQueue(CreateQueueRequest.builder().queueName("accepted-events").build());
-		queueUrl = sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName("accepted-events").build()).queueUrl();
+		sqsClient.createQueue(CreateQueueRequest.builder().queueName(QUEUE_NAME).build());
+		queueUrl = sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(QUEUE_NAME).build()).queueUrl();
 	}
 
 	@Test
@@ -161,6 +168,43 @@ class WorkerRescoreTests {
 		}
 	}
 
+	@Test
+	void missingEventMovesToDeadLetterQueueAfterBoundedReceives() {
+		String eventId = "evt-rescore-dead-letter";
+		List<Message> deadLetterMessages = List.of();
+		String deadLetterQueueUrl = null;
+		setQueueVisibilityTimeout(0);
+		try {
+			poller.pollOnce();
+			deadLetterQueueUrl = queueUrl(DEAD_LETTER_QUEUE_NAME);
+
+			String deadLetterQueueArn = queueAttribute(deadLetterQueueUrl, QueueAttributeName.QUEUE_ARN);
+			String redrivePolicy = queueAttribute(queueUrl, QueueAttributeName.REDRIVE_POLICY);
+			assertThat(redrivePolicy)
+					.contains("\"deadLetterTargetArn\":\"" + deadLetterQueueArn + "\"")
+					.contains("\"maxReceiveCount\":\"" + MAX_RECEIVE_COUNT + "\"");
+
+			send(body("tenant-a", eventId), "tenant-a");
+			for (int attempt = 0;
+					attempt < MAX_RECEIVE_COUNT + 2 && deadLetterMessages.isEmpty();
+					attempt++) {
+				poller.pollOnce();
+				deadLetterMessages = receiveMessages(deadLetterQueueUrl);
+			}
+
+			assertThat(deadLetterMessages).anyMatch(message -> message.body().contains(eventId));
+			assertThat(poller.acceptedEventIds()).doesNotContain(eventId);
+			assertThat(findScore("tenant-a", "acct-from-missing-event")).isNull();
+		}
+		finally {
+			if (deadLetterQueueUrl != null) {
+				String finalDeadLetterQueueUrl = deadLetterQueueUrl;
+				deadLetterMessages.forEach(message -> delete(finalDeadLetterQueueUrl, message));
+			}
+			setQueueVisibilityTimeout(30);
+		}
+	}
+
 	private void insertEvent(String tenantId, String eventId, String accountId, String eventType) {
 		jdbcTemplate.update(
 				"""
@@ -200,8 +244,12 @@ class WorkerRescoreTests {
 	}
 
 	private List<Message> receiveMessages() {
+		return receiveMessages(queueUrl);
+	}
+
+	private List<Message> receiveMessages(String targetQueueUrl) {
 		return sqsClient.receiveMessage(ReceiveMessageRequest.builder()
-				.queueUrl(queueUrl)
+				.queueUrl(targetQueueUrl)
 				.maxNumberOfMessages(10)
 				.waitTimeSeconds(1)
 				.build())
@@ -209,10 +257,27 @@ class WorkerRescoreTests {
 	}
 
 	private void delete(Message message) {
+		delete(queueUrl, message);
+	}
+
+	private void delete(String targetQueueUrl, Message message) {
 		sqsClient.deleteMessage(DeleteMessageRequest.builder()
-				.queueUrl(queueUrl)
+				.queueUrl(targetQueueUrl)
 				.receiptHandle(message.receiptHandle())
 				.build());
+	}
+
+	private String queueUrl(String queueName) {
+		return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).queueUrl();
+	}
+
+	private String queueAttribute(String targetQueueUrl, QueueAttributeName attributeName) {
+		return sqsClient.getQueueAttributes(GetQueueAttributesRequest.builder()
+				.queueUrl(targetQueueUrl)
+				.attributeNames(attributeName)
+				.build())
+				.attributes()
+				.get(attributeName);
 	}
 
 	private void setQueueVisibilityTimeout(int seconds) {
