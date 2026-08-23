@@ -159,6 +159,14 @@ require_heading "apps/platform-service/src/main/resources/db/migration/V2__tenan
 require_file "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventPersistenceTests.java"
 require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventPersistenceTests.java" "ingested_events"
 
+require_file "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventEnqueueTests.java"
+require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventEnqueueTests.java" "tenant_id"
+require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventEnqueueTests.java" "accepted-events"
+require_file "apps/platform-service/src/main/java/com/tenantmetrics/platform/events/SqsAcceptedEventPublisher.java"
+require_heading "apps/platform-service/src/main/java/com/tenantmetrics/platform/events/SqsAcceptedEventPublisher.java" "tenant_id"
+require_file "localstack/init/ready.d/init-sqs.sh"
+require_heading "localstack/init/ready.d/init-sqs.sh" "accepted-events"
+
 require_file ".github/workflows/verify.yml"
 require_heading ".github/workflows/verify.yml" "./scripts/verify.sh"
 require_heading ".github/workflows/verify.yml" "contents: read"

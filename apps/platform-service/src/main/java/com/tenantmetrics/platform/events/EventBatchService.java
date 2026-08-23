@@ -20,9 +20,11 @@ class EventBatchService {
 	private static final Pattern EVENT_TYPE = Pattern.compile("^[A-Za-z][A-Za-z0-9_]*\\.[A-Za-z][A-Za-z0-9_.]*$");
 
 	private final EventBatchStore eventBatchStore;
+	private final AcceptedEventPublisher acceptedEventPublisher;
 
-	EventBatchService(EventBatchStore eventBatchStore) {
+	EventBatchService(EventBatchStore eventBatchStore, AcceptedEventPublisher acceptedEventPublisher) {
 		this.eventBatchStore = eventBatchStore;
+		this.acceptedEventPublisher = acceptedEventPublisher;
 	}
 
 	@Transactional
@@ -47,6 +49,7 @@ class EventBatchService {
 					event,
 					Instant.parse(event.occurredAt()),
 					writeProperties(event.properties()))) {
+				acceptedEventPublisher.publish(tenant.tenantId(), event.eventId(), requestId);
 				accepted++;
 			}
 			else {

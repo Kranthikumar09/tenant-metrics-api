@@ -4,18 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-013 — Enqueue accepted events for the worker**
+**PR-014 — Worker consumes tenant-tagged event messages**
 
 - Capacity: S
-- Why next: Events persist; the worker still has no work to consume
-- Main dependency: PR-012
+- Why next: Messages are on SQS; the worker still does not read them
+- Main dependency: PR-013
 - Out of scope: scoring, webhooks, Redis, MongoDB, production IdP
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-014 | Worker consumes tenant-tagged event messages | S | PR-013 | LocalStack SQS |
+| PR-015 | Rules-based cold-start score | S | PR-014 | No learned models |
 
 ## Completed
 
@@ -36,7 +36,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-009 | `/apps/worker` same-version process skeleton | implemented |
 | PR-010 | Identity and immutable TenantContext | implemented |
 | PR-011 | Contract-first OpenAPI and `POST /v1/events:batch` | implemented |
-| PR-012 | Persist tenant-scoped events | implemented in this branch |
+| PR-012 | Persist tenant-scoped events | implemented |
+| PR-013 | Enqueue accepted events for the worker | implemented in this branch |
 
 ## Intentionally not scheduled
 
