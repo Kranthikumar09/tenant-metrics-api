@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-010 — Tenant isolation.
+Last updated after PR-011 — Events batch.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith skeleton with JDBC, Flyway, Testcontainers PostgreSQL tests, and credential-based TenantContext. `/apps/worker` is a same-version non-web background process skeleton. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, Testcontainers PostgreSQL tests, hashed-key TenantContext, and in-memory `POST /v1/events:batch`. `/apps/worker` is a same-version non-web background process skeleton. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-010-tenant-context-9d98`
+- Branch: `cursor/pr-011-events-batch-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
 - Threat model: `docs/security/threat-model.md`
@@ -24,9 +24,9 @@ Last updated after PR-010 — Tenant isolation.
 
 | Area | State |
 | --- | --- |
-| Product docs | ADR-001, PRD, data classification, ADR template, and threat model exist; OpenAPI does not |
-| Backend | `platform-service` with Actuator, JDBC, Flyway, and hashed API-key TenantContext; `worker` boots as a non-web process; legacy modules still empty scaffolds |
-| Tests | platform-service context, health, PostgreSQL bootstrap, and tenant-isolation; worker context-load and non-web assertion |
+| Product docs | ADR-001, PRD, data classification, ADR template, threat model, and events:batch OpenAPI exist |
+| Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, and in-memory event batch ingest; `worker` boots as a non-web process; legacy modules still empty scaffolds |
+| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, and event-batch; worker context-load and non-web assertion |
 | Persistence | Flyway `V1__platform_bootstrap.sql` in `platform-service`; worker has no datastore |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
@@ -43,6 +43,13 @@ Still open:
 4. Foundation PRs were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
 5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 6. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
+
+## What PR-011 added
+
+- `contracts/openapi/churn-api.yaml` for `POST /v1/events:batch`
+- Tenant-bound ingest from `TenantContext`; client tenant claims are ignored
+- In-memory idempotency receipts and per-tenant `event_id` dedup
+- Batch size capped at 500; no PostgreSQL event table yet
 
 ## What PR-010 added
 

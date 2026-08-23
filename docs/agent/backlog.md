@@ -4,18 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-011 — Contract-first OpenAPI and `POST /v1/events:batch`**
+**PR-012 — Persist tenant-scoped events**
 
 - Capacity: S
-- Why next: TenantContext exists; the next customer-facing behavior is idempotent ingestion
-- Main dependency: PR-010
+- Why next: Ingest exists in memory; durable writes must bind `tenant_id`
+- Main dependency: PR-011
 - Out of scope: scoring, webhooks, Redis, MongoDB, production IdP
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-012 | Persist tenant-scoped events | S | PR-011 | Bind tenant_id on every write |
+| PR-013 | Enqueue accepted events for the worker | S | PR-012 | LocalStack SQS |
 
 ## Completed
 
@@ -34,7 +34,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-005 | STRIDE threat model | implemented |
 | PR-007 | LocalStack-compatible SQS/S3 on Compose | implemented |
 | PR-009 | `/apps/worker` same-version process skeleton | implemented |
-| PR-010 | Identity and immutable TenantContext | implemented in this branch |
+| PR-010 | Identity and immutable TenantContext | implemented |
+| PR-011 | Contract-first OpenAPI and `POST /v1/events:batch` | implemented in this branch |
 
 ## Intentionally not scheduled
 
