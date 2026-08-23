@@ -9,6 +9,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.tenantmetrics.worker.scoring.AccountScoreRefresher;
+
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -26,14 +28,19 @@ class AcceptedEventPoller {
 
 	private final EventQueueProperties properties;
 	private final TenantTaggedEventHandler handler;
+	private final AccountScoreRefresher scoreRefresher;
 	private final List<String> acceptedEventIds = new ArrayList<>();
 	private final List<String> rejectedReasons = new ArrayList<>();
 	private SqsClient sqsClient;
 	private String queueUrl;
 
-	AcceptedEventPoller(EventQueueProperties properties, TenantTaggedEventHandler handler) {
+	AcceptedEventPoller(
+			EventQueueProperties properties,
+			TenantTaggedEventHandler handler,
+			AccountScoreRefresher scoreRefresher) {
 		this.properties = properties;
 		this.handler = handler;
+		this.scoreRefresher = scoreRefresher;
 	}
 
 	@Scheduled(fixedDelayString = "${platform.events.queue.poll-interval-ms:1000}")
@@ -57,6 +64,7 @@ class AcceptedEventPoller {
 			ConsumeResult result = handler.handle(message.body(), attributeTenantId);
 			if (result.accepted()) {
 				acceptedEventIds.add(result.eventId());
+				scoreRefresher.refresh(result.tenantId(), result.eventId());
 			}
 			else if (result.rejection() != null) {
 				rejectedReasons.add(result.rejection());
