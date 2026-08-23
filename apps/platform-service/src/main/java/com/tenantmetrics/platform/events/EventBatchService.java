@@ -5,10 +5,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.tenantmetrics.platform.tenancy.TenantContext;
 
@@ -19,15 +19,20 @@ class EventBatchService {
 
 	private static final Pattern EVENT_TYPE = Pattern.compile("^[A-Za-z][A-Za-z0-9_]*\\.[A-Za-z][A-Za-z0-9_.]*$");
 
-	private final ConcurrentHashMap<String, EventBatchResponse> receipts = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<String, Boolean> acceptedEventIds = new ConcurrentHashMap<>();
+	private final EventBatchStore eventBatchStore;
 
-	EventBatchResponse ingest(TenantContext tenant, String idempotencyKey, EventBatchRequest request) {
-		String receiptKey = tenant.tenantId() + '\u0000' + idempotencyKey;
-		return receipts.computeIfAbsent(receiptKey, ignored -> process(tenant, request));
+	EventBatchService(EventBatchStore eventBatchStore) {
+		this.eventBatchStore = eventBatchStore;
 	}
 
-	private EventBatchResponse process(TenantContext tenant, EventBatchRequest request) {
+	@Transactional
+	EventBatchResponse ingest(TenantContext tenant, String idempotencyKey, EventBatchRequest request) {
+		return eventBatchStore.findReceipt(tenant.tenantId(), idempotencyKey)
+				.orElseGet(() -> persist(tenant, idempotencyKey, request));
+	}
+
+	private EventBatchResponse persist(TenantContext tenant, String idempotencyKey, EventBatchRequest request) {
+		String requestId = UUID.randomUUID().toString();
 		int accepted = 0;
 		int rejected = 0;
 		int duplicates = 0;
@@ -36,15 +41,51 @@ class EventBatchService {
 				rejected++;
 				continue;
 			}
-			String eventKey = tenant.tenantId() + '\u0000' + event.eventId();
-			if (acceptedEventIds.putIfAbsent(eventKey, Boolean.TRUE) != null) {
-				duplicates++;
-			}
-			else {
+			if (eventBatchStore.insertEvent(
+					tenant.tenantId(),
+					requestId,
+					event,
+					Instant.parse(event.occurredAt()),
+					writeProperties(event.properties()))) {
 				accepted++;
 			}
+			else {
+				duplicates++;
+			}
 		}
-		return new EventBatchResponse(UUID.randomUUID().toString(), accepted, rejected, duplicates);
+		EventBatchResponse response = new EventBatchResponse(requestId, accepted, rejected, duplicates);
+		eventBatchStore.insertReceipt(tenant.tenantId(), idempotencyKey, response);
+		return response;
+	}
+
+	private static String writeProperties(Map<String, Object> properties) {
+		if (properties == null || properties.isEmpty()) {
+			return null;
+		}
+		StringBuilder json = new StringBuilder("{");
+		boolean first = true;
+		for (Map.Entry<String, Object> entry : properties.entrySet()) {
+			if (!first) {
+				json.append(',');
+			}
+			first = false;
+			json.append('"').append(escapeJson(entry.getKey())).append("\":").append(jsonLiteral(entry.getValue()));
+		}
+		return json.append('}').toString();
+	}
+
+	private static String jsonLiteral(Object value) {
+		if (value == null) {
+			return "null";
+		}
+		if (value instanceof Boolean || value instanceof Number) {
+			return value.toString();
+		}
+		return "\"" + escapeJson(String.valueOf(value)) + "\"";
+	}
+
+	private static String escapeJson(String value) {
+		return value.replace("\\", "\\\\").replace("\"", "\\\"");
 	}
 
 	private static boolean isValid(IngestEvent event) {
