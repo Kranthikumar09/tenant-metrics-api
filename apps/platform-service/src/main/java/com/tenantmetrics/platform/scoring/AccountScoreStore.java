@@ -49,18 +49,34 @@ class AccountScoreStore {
 				.findFirst();
 	}
 
-	List<AccountScore> listByTenant(String tenantId) {
+	List<AccountScore> listByTenant(String tenantId, String afterAccountId, int limit) {
+		if (afterAccountId == null) {
+			return jdbcTemplate.query(
+					"""
+							SELECT tenant_id, account_external_id, eligibility, health_score, risk_band,
+								risk_probability, score_version, feature_version, drivers, scored_at, freshness_seconds
+							FROM account_scores
+							WHERE tenant_id = ?
+							ORDER BY account_external_id
+							LIMIT ?
+							""",
+					this::mapScore,
+					tenantId,
+					limit);
+		}
 		return jdbcTemplate.query(
 				"""
 						SELECT tenant_id, account_external_id, eligibility, health_score, risk_band,
 							risk_probability, score_version, feature_version, drivers, scored_at, freshness_seconds
 						FROM account_scores
-						WHERE tenant_id = ?
+						WHERE tenant_id = ? AND account_external_id > ?
 						ORDER BY account_external_id
-						LIMIT 500
+						LIMIT ?
 						""",
 				this::mapScore,
-				tenantId);
+				tenantId,
+				afterAccountId,
+				limit);
 	}
 
 	void upsert(AccountScore score) {

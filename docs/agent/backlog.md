@@ -4,18 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-018 — Prediction list cursor pagination**
+**PR-019 — Extract shared rules scorer**
 
 - Capacity: S
-- Why next: Prediction list is capped at 500 with no stable cursor
-- Main dependency: PR-017
+- Why next: Platform-service and worker each copy `RulesBaselineScorer`
+- Main dependency: PR-018
 - Out of scope: learned models, webhooks, Redis, MongoDB, production IdP
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-019 | Extract shared rules scorer | S | PR-018 | Remove worker/platform duplication |
+| PR-020 | Angular console skeleton | S | PR-019 | `/apps/console` onboarding/risk shell |
 
 ## Completed
 
@@ -41,7 +41,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-014 | Worker consumes tenant-tagged event messages | implemented |
 | PR-015 | Rules-based cold-start score | implemented |
 | PR-016 | Predictions read API | implemented |
-| PR-017 | Worker rescoring from tenant-tagged messages | implemented in this branch |
+| PR-017 | Worker rescoring from tenant-tagged messages | implemented |
+| PR-018 | Prediction list cursor pagination | implemented in this branch |
 
 ## Intentionally not scheduled
 
