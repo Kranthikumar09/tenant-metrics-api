@@ -4,19 +4,18 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-027R — Add a provider-neutral OIDC login adapter**
+**PR-028R — Console lists current predictions**
 
 - Capacity: S
-- Why next: session and membership boundaries now exist; a verified OIDC issuer and subject can be mapped without trusting a tenant claim
-- Main dependency: PR-026R
-- In scope: provider-neutral OIDC client adapter, Authorization Code plus PKCE security contract, membership-resolver mapping into `TenantSessionPrincipal`, and failure tests without production credentials
-- Out of scope: selecting or configuring a production IdP tenant, Angular prediction fetch, tenant switching, RBAC expansion, Redis, MongoDB, production deployment
+- Why next: the console can now rely on a server-side browser session whose active tenant comes from verified membership; the first customer-visible slice is reading current predictions
+- Main dependency: PR-027R
+- In scope: Angular prediction-list client and risk-route rendering through the same-origin server session, loading/empty/error states, and proof that no API key or OAuth token enters browser storage or compiled assets
+- Out of scope: production IdP selection or credentials, tenant switching, score history, RBAC expansion, Redis, MongoDB, production deployment
 
 ## Later candidates
 
 | ID | Title | Capacity | Depends on | Notes |
 | --- | --- | --- | --- | --- |
-| PR-028R | Console lists current predictions | S | PR-027R | Use the server session; never place API keys or OAuth tokens in Angular storage |
 | PR-029R | Score history | S | PR-028R | Versioned score rows beyond current snapshot |
 
 ## Completed
@@ -52,7 +51,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-023R | Add a worker dead-letter queue and bounded redrive policy | implemented |
 | PR-024R | Lock the console browser authentication and session contract | implemented |
 | PR-025R | Add the PostgreSQL-backed browser session and CSRF foundation | implemented |
-| PR-026R | Add server-side tenant membership resolution | implemented in this branch |
+| PR-026R | Add server-side tenant membership resolution | implemented |
+| PR-027R | Add a provider-neutral OIDC login adapter | implemented in this branch |
 
 ## Intentionally not scheduled
 
