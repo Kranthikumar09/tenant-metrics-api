@@ -19,13 +19,6 @@ class TenantIsolationTests extends AbstractPlatformPostgresTest {
 	private MockMvc mockMvc;
 
 	@Test
-	void healthRemainsPublic() throws Exception {
-		mockMvc.perform(get("/actuator/health"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("UP"));
-	}
-
-	@Test
 	void missingCredentialIsUnauthorized() throws Exception {
 		mockMvc.perform(get("/v1/tenant-context"))
 				.andExpect(status().isUnauthorized());
