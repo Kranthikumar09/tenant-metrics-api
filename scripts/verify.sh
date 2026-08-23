@@ -10,6 +10,9 @@ cd "${ROOT}"
 echo "==> Agent and architecture docs"
 ./scripts/check-agent-docs.sh
 
+echo "==> rules-scoring tests"
+./mvnw -ntp -pl libs/rules-scoring test
+
 echo "==> platform-service tests"
 ./mvnw -ntp -pl apps/platform-service -am test
 
@@ -24,7 +27,7 @@ echo "==> worker package"
 
 echo "==> platform-service and worker dependency trees (ban MongoDB and Redis)"
 tree_log="$(mktemp)"
-./mvnw -ntp -pl apps/platform-service,apps/worker dependency:tree | tee "${tree_log}"
+./mvnw -ntp -pl apps/platform-service,apps/worker,libs/rules-scoring dependency:tree | tee "${tree_log}"
 if grep -Ei 'org\.mongodb:|spring-boot-starter-data-mongodb|spring-data-mongodb|spring-boot-starter-data-redis|spring-data-redis|lettuce-core|redis\.clients' "${tree_log}"; then
   echo "verify.sh: FAIL banned MongoDB or Redis library found in dependency tree"
   rm -f "${tree_log}"

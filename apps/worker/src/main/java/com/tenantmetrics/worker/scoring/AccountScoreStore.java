@@ -6,6 +6,9 @@ import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.tenantmetrics.scoring.AccountEvent;
+import com.tenantmetrics.scoring.AccountScore;
+
 class AccountScoreStore {
 
 	private final JdbcTemplate jdbcTemplate;

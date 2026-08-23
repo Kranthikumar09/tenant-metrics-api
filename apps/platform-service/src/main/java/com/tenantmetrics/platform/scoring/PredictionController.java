@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.tenantmetrics.scoring.AccountScore;
+
 import com.tenantmetrics.platform.tenancy.TenantContext;
 import com.tenantmetrics.platform.tenancy.TenantResolutionFilter;
 

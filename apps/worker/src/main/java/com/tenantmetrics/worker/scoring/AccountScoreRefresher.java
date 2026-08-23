@@ -8,6 +8,9 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import com.tenantmetrics.scoring.AccountEvent;
+import com.tenantmetrics.scoring.RulesBaselineScorer;
+
 @Component
 public class AccountScoreRefresher {
 

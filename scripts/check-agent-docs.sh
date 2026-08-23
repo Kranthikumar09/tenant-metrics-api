@@ -44,6 +44,16 @@ forbid_text() {
   echo "ABSENT OUTDATED TEXT in ${path}: ${text}"
 }
 
+forbid_file() {
+  local path="$1"
+  if [[ -f "${ROOT}/${path}" ]]; then
+    echo "LEFTOVER FILE: ${path}"
+    failures=$((failures + 1))
+    return 0
+  fi
+  echo "ABSENT LEFTOVER FILE: ${path}"
+}
+
 require_file "AGENTS.md"
 require_file "README.md"
 require_file "docs/agent/project-index.md"
@@ -92,6 +102,7 @@ require_heading "docs/architecture/ADRs/ADR-001-mvp-architecture.md" "Redis"
 require_heading "docs/architecture/context-map.md" "## Current modules"
 require_heading "docs/architecture/context-map.md" "## Target modules"
 require_heading "docs/architecture/context-map.md" "Freeze"
+require_heading "docs/architecture/context-map.md" "rules-scoring"
 
 require_heading "AGENTS.md" "## Approved architecture contract"
 require_heading "AGENTS.md" "ADR-001 is the approved architecture contract"
@@ -121,6 +132,7 @@ forbid_text "docker-compose.yml" "AWS_ACCESS_KEY_ID"
 require_file "scripts/verify.sh"
 require_heading "scripts/verify.sh" "apps/platform-service"
 require_heading "scripts/verify.sh" "apps/worker"
+require_heading "scripts/verify.sh" "libs/rules-scoring"
 require_heading "scripts/verify.sh" "check-agent-docs.sh"
 forbid_text "scripts/verify.sh" "-pl core-service"
 
@@ -179,14 +191,24 @@ require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/
 require_file "apps/platform-service/src/main/resources/db/migration/V3__account_scores.sql"
 require_heading "apps/platform-service/src/main/resources/db/migration/V3__account_scores.sql" "tenant_id"
 require_heading "apps/platform-service/src/main/resources/db/migration/V3__account_scores.sql" "account_external_id"
-require_file "apps/platform-service/src/main/java/com/tenantmetrics/platform/scoring/RulesBaselineScorer.java"
-require_heading "apps/platform-service/src/main/java/com/tenantmetrics/platform/scoring/RulesBaselineScorer.java" "RULES_BASELINE"
-require_heading "apps/platform-service/src/main/java/com/tenantmetrics/platform/scoring/RulesBaselineScorer.java" "risk_probability"
+require_file "libs/rules-scoring/pom.xml"
+require_heading "libs/rules-scoring/pom.xml" "ban-mongodb-and-redis"
+forbid_text "libs/rules-scoring/pom.xml" "common-models"
+forbid_text "libs/rules-scoring/pom.xml" "core-service"
+forbid_text "libs/rules-scoring/pom.xml" "api-gateway"
+forbid_text "libs/rules-scoring/pom.xml" "spring-boot-starter-webmvc"
+require_file "libs/rules-scoring/src/main/java/com/tenantmetrics/scoring/RulesBaselineScorer.java"
+require_heading "libs/rules-scoring/src/main/java/com/tenantmetrics/scoring/RulesBaselineScorer.java" "RULES_BASELINE"
+require_heading "libs/rules-scoring/src/main/java/com/tenantmetrics/scoring/RulesBaselineScorer.java" "risk_probability"
+require_file "libs/rules-scoring/src/test/java/com/tenantmetrics/scoring/RulesBaselineScorerTests.java"
+require_heading "libs/rules-scoring/src/test/java/com/tenantmetrics/scoring/RulesBaselineScorerTests.java" "RULES_BASELINE"
+forbid_file "apps/platform-service/src/main/java/com/tenantmetrics/platform/scoring/RulesBaselineScorer.java"
+forbid_file "apps/worker/src/main/java/com/tenantmetrics/worker/scoring/RulesBaselineScorer.java"
 require_file "apps/platform-service/src/test/java/com/tenantmetrics/platform/RulesScoreTests.java"
 require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/RulesScoreTests.java" "tenant-a"
 require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/RulesScoreTests.java" "tenant-b"
-require_file "apps/platform-service/src/test/java/com/tenantmetrics/platform/scoring/RulesBaselineScorerTests.java"
-require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/scoring/RulesBaselineScorerTests.java" "RULES_BASELINE"
+require_heading "apps/platform-service/src/main/java/com/tenantmetrics/platform/scoring/AccountScoreService.java" "com.tenantmetrics.scoring.RulesBaselineScorer"
+require_heading "apps/worker/src/main/java/com/tenantmetrics/worker/scoring/AccountScoreRefresher.java" "com.tenantmetrics.scoring.RulesBaselineScorer"
 require_file "apps/platform-service/src/main/java/com/tenantmetrics/platform/scoring/PredictionController.java"
 require_heading "apps/platform-service/src/main/java/com/tenantmetrics/platform/scoring/PredictionController.java" "/v1/predictions"
 require_heading "apps/platform-service/src/main/java/com/tenantmetrics/platform/scoring/PredictionController.java" "TENANT_CONTEXT_ATTRIBUTE"

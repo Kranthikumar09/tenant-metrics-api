@@ -9,6 +9,9 @@ import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import com.tenantmetrics.scoring.AccountEvent;
+import com.tenantmetrics.scoring.AccountScore;
+
 @Repository
 class AccountScoreStore {
 

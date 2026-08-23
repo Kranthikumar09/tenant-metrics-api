@@ -5,6 +5,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.tenantmetrics.scoring.AccountEvent;
+import com.tenantmetrics.scoring.RulesBaselineScorer;
+
 @Service
 public class AccountScoreService {
 
