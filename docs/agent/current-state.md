@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-013 — Enqueue events.
+Last updated after PR-014 — Worker consume.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, and LocalStack SQS publish for accepted events. `/apps/worker` is a same-version non-web background process skeleton. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, tenant-scoped event persistence, and LocalStack SQS publish for accepted events. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages and rejects missing or mismatched tenant tags. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-013-enqueue-events-9d98`
+- Branch: `cursor/pr-014-worker-consume-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
 - Threat model: `docs/security/threat-model.md`
@@ -25,8 +25,8 @@ Last updated after PR-013 — Enqueue events.
 | Area | State |
 | --- | --- |
 | Product docs | ADR-001, PRD, data classification, ADR template, threat model, and events:batch OpenAPI exist |
-| Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, and SQS enqueue; `worker` boots as a non-web process and does not consume yet |
-| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, and enqueue; worker context-load and non-web assertion |
+| Backend | `platform-service` with Actuator, JDBC, Flyway, hashed API-key TenantContext, tenant-scoped event persistence, and SQS enqueue; `worker` consumes tenant-tagged SQS messages |
+| Tests | platform-service context, health, PostgreSQL bootstrap, tenant-isolation, event-batch, persistence, and enqueue; worker context-load, non-web assertion, and consume tests |
 | Persistence | Flyway V1 bootstrap and V2 `ingested_events` / `ingest_receipts`; worker has no datastore |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
@@ -43,6 +43,12 @@ Still open:
 4. Foundation PRs were merged into stacked feature branches, not `origin/main`. `main` may still lack ADR-001 and later foundation work until that stack is merged there.
 5. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
 6. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
+
+## What PR-014 added
+
+- Worker polls `accepted-events` and requires matching body and attribute `tenant_id`
+- Missing or mismatched tenant tags are rejected and not processed
+- No scoring yet
 
 ## What PR-013 added
 
