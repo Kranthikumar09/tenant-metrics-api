@@ -92,19 +92,29 @@ class WorkerRescoreTests {
 
 	@Test
 	void acceptedTenantTaggedMessageWritesThatTenantScore() {
-		insertEvent("tenant-a", "evt-rescore-a", "acct-rescore-a", "auth.login");
-		insertEvent("tenant-b", "evt-rescore-b-noise", "acct-rescore-a", "auth.login");
+		List<Message> unexpectedMessages = List.of();
+		setQueueVisibilityTimeout(0);
+		try {
+			insertEvent("tenant-a", "evt-rescore-a", "acct-rescore-a", "auth.login");
+			insertEvent("tenant-b", "evt-rescore-b-noise", "acct-rescore-a", "auth.login");
 
-		send(body("tenant-a", "evt-rescore-a"), "tenant-a");
-		assertThat(poller.pollOnce()).isEqualTo(1);
-		assertThat(poller.acceptedEventIds()).contains("evt-rescore-a");
+			send(body("tenant-a", "evt-rescore-a"), "tenant-a");
+			assertThat(poller.pollOnce()).isEqualTo(1);
+			unexpectedMessages = receiveMessages();
+			assertThat(poller.acceptedEventIds()).contains("evt-rescore-a");
+			assertThat(unexpectedMessages).isEmpty();
 
-		Map<String, Object> score = findScore("tenant-a", "acct-rescore-a");
-		assertThat(score).isNotNull();
-		assertThat(score.get("score_version")).isEqualTo("RULES_BASELINE");
-		assertThat(((Number) score.get("health_score")).intValue()).isEqualTo(70);
-		assertThat(score.get("risk_probability")).isNull();
-		assertThat(findScore("tenant-b", "acct-rescore-a")).isNull();
+			Map<String, Object> score = findScore("tenant-a", "acct-rescore-a");
+			assertThat(score).isNotNull();
+			assertThat(score.get("score_version")).isEqualTo("RULES_BASELINE");
+			assertThat(((Number) score.get("health_score")).intValue()).isEqualTo(70);
+			assertThat(score.get("risk_probability")).isNull();
+			assertThat(findScore("tenant-b", "acct-rescore-a")).isNull();
+		}
+		finally {
+			unexpectedMessages.forEach(this::delete);
+			setQueueVisibilityTimeout(30);
+		}
 	}
 
 	@Test
