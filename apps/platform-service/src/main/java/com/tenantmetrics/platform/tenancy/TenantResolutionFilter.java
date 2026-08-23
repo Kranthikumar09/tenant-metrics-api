@@ -21,7 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class TenantResolutionFilter extends OncePerRequestFilter {
 
-	static final String TENANT_CONTEXT_ATTRIBUTE = TenantContext.class.getName();
+	public static final String TENANT_CONTEXT_ATTRIBUTE = TenantContext.class.getName();
 
 	private final ApiKeyProperties apiKeyProperties;
 
