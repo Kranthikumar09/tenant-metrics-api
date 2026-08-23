@@ -90,13 +90,19 @@ class EventConsumeTests {
 	}
 
 	@Test
-	void pollerAcceptsMatchingMessageAndRejectsBadTags() {
-		send(body("tenant-a", "evt-poll-ok"), "tenant-a");
+	void missingEventIdHasADistinctRejectionReason() {
+		ConsumeResult result = handler.handle("{\"tenant_id\":\"tenant-a\"}", "tenant-a");
+		assertThat(result.accepted()).isFalse();
+		assertThat(result.rejection()).isEqualTo("missing_event");
+	}
+
+	@Test
+	void pollerPermanentlyRejectsBadTags() {
 		send("{\"event_id\":\"evt-poll-missing\"}", null);
 		send(body("tenant-a", "evt-poll-mismatch"), "tenant-b");
 
-		assertThat(poller.pollOnce()).isEqualTo(3);
-		assertThat(poller.acceptedEventIds()).containsExactly("evt-poll-ok");
+		assertThat(poller.pollOnce()).isEqualTo(2);
+		assertThat(poller.acceptedEventIds()).isEmpty();
 		assertThat(poller.rejectedReasons()).contains("missing_tenant", "mismatched_tenant");
 		assertThat(remainingMessages()).isZero();
 	}
