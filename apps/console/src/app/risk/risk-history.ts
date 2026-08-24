@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
 	PredictionClient,
 	PredictionViewState,
+	loadNextPredictionHistoryState,
 	loadPredictionHistoryState,
 } from './prediction-client';
 
@@ -29,6 +30,20 @@ export class RiskHistoryPage implements OnInit {
 		const state = this.state();
 		return state.status === 'error' ? state.message : '';
 	});
+	protected readonly hasMore = computed(() => {
+		const state = this.state();
+		return state.status === 'ready' && state.nextCursor !== undefined;
+	});
+	protected readonly isLoadingMore = computed(() => {
+		const state = this.state();
+		return state.status === 'ready' && state.pagination.status === 'loading';
+	});
+	protected readonly paginationErrorMessage = computed(() => {
+		const state = this.state();
+		return state.status === 'ready' && state.pagination.status === 'error'
+			? state.pagination.message
+			: '';
+	});
 
 	ngOnInit(): void {
 		void this.load();
@@ -38,11 +53,36 @@ export class RiskHistoryPage implements OnInit {
 		void this.load();
 	}
 
+	protected loadMore(): void {
+		const current = this.state();
+		if (current.status !== 'ready'
+			|| current.nextCursor === undefined
+			|| current.pagination.status === 'loading') {
+			return;
+		}
+
+		this.state.set({
+			...current,
+			pagination: { status: 'loading' },
+		});
+		void this.loadNextPage(current);
+	}
+
 	private async load(): Promise<void> {
 		this.state.set({ status: 'loading' });
 		this.state.set(await loadPredictionHistoryState(
 			this.predictions,
 			this.accountExternalId,
+		));
+	}
+
+	private async loadNextPage(
+		current: Extract<PredictionViewState, { status: 'ready' }>,
+	): Promise<void> {
+		this.state.set(await loadNextPredictionHistoryState(
+			this.predictions,
+			this.accountExternalId,
+			current,
 		));
 	}
 }
