@@ -79,7 +79,6 @@ public class PlatformSecurityConfiguration {
 						.logoutRequestMatcher(PathPatternRequestMatcher.pathPattern(HttpMethod.POST, "/logout"))
 						.invalidateHttpSession(true)
 						.clearAuthentication(true)
-						.deleteCookies("__Host-tm_session")
 						.logoutSuccessHandler((request, response, authentication) -> {
 							CsrfToken freshToken = csrfRepository.generateToken(request);
 							csrfRepository.saveToken(freshToken, request, response);
