@@ -119,6 +119,16 @@ test('logout outcome does not expose backend failure details', async () => {
 	});
 });
 
+test('logout outcome reports successful server invalidation', async () => {
+	let requests = 0;
+	const result = await requestLogout(async () => {
+		requests += 1;
+	});
+
+	assert.equal(requests, 1);
+	assert.deepEqual(result, { status: 'signed-out' });
+});
+
 test('shell exposes accessible pending, success, and retryable logout states', () => {
 	const component = read('app.ts');
 	const template = read('app.html');
