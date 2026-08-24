@@ -279,7 +279,7 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 	@Test
 	void disabledTenantRevokesPersistedBrowserSessionOnNextApiRequest() throws Exception {
 		int sessionsBefore = sessionCount();
-		String tenantId = "tenant-disabled";
+		String tenantId = "tenant-session-revoked-tenant";
 		RequestPostProcessor browserPrincipal = tenantSession("disabled-tenant", tenantId);
 		PersistedSession session = createPersistedSession();
 		jdbcTemplate.update("UPDATE tenants SET enabled = FALSE WHERE tenant_id = ?", tenantId);
