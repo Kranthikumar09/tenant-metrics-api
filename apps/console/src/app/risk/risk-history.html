@@ -43,5 +43,23 @@
 				}
 			</tbody>
 		</table>
+
+		@if (hasMore()) {
+			<button type="button" [disabled]="isLoadingMore()" (click)="loadMore()">
+				@if (paginationErrorMessage()) {
+					Try loading more history again
+				} @else {
+					Load more
+				}
+			</button>
+			@if (isLoadingMore()) {
+				<p role="status" aria-live="polite">Loading more score history…</p>
+			}
+			@if (paginationErrorMessage()) {
+				<p role="alert">{{ paginationErrorMessage() }}</p>
+			}
+		} @else {
+			<p role="status">All score history revisions are shown.</p>
+		}
 	}
 </section>

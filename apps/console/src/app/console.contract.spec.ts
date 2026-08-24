@@ -7,6 +7,7 @@ import test from 'node:test';
 import {
 	PredictionClient,
 	PredictionRequestError,
+	loadNextPredictionHistoryState,
 	loadNextPredictionState,
 	loadPredictionHistoryState,
 	loadPredictionState,
@@ -152,11 +153,42 @@ test('prediction-history client encodes the account path and uses only the same-
 	assert.equal(response.items[0]?.account_external_id, 'account/with spaces');
 });
 
+test('prediction-history client encodes the opaque cursor for later account pages', async () => {
+	let requestedUrl = '';
+	let requestedInit: RequestInit | undefined;
+	const client = new PredictionClient(async (url, init) => {
+		requestedUrl = url;
+		requestedInit = init;
+		return jsonResponse({ items: [prediction('acct-history')] });
+	});
+
+	await client.listHistory('account/with spaces', 'history+/=cursor');
+
+	assert.equal(
+		requestedUrl,
+		'/v1/accounts/account%2Fwith%20spaces/prediction-history?limit=50&cursor=history%2B%2F%3Dcursor',
+	);
+	assert.deepEqual(requestedInit, {
+		method: 'GET',
+		credentials: 'same-origin',
+		cache: 'no-store',
+		headers: { Accept: 'application/json' },
+	});
+	assert.doesNotMatch(JSON.stringify(requestedInit), /X-Api-Key|Authorization|Bearer/i);
+});
+
 test('prediction-history state exposes ready, empty, and safe error outcomes', async () => {
 	const ready = await loadPredictionHistoryState({
-		listHistory: async () => ({ items: [prediction('acct-history')] }),
+		listHistory: async () => ({
+			items: [prediction('acct-history')],
+			next_cursor: 'history-page-2',
+		}),
 	}, 'acct-history');
 	assert.equal(ready.status, 'ready');
+	if (ready.status === 'ready') {
+		assert.equal(ready.nextCursor, 'history-page-2');
+		assert.deepEqual(ready.pagination, { status: 'idle' });
+	}
 
 	const empty = await loadPredictionHistoryState({
 		listHistory: async () => ({ items: [] }),
@@ -181,6 +213,98 @@ test('prediction-history state exposes ready, empty, and safe error outcomes', a
 	assert.deepEqual(unavailable, {
 		status: 'error',
 		message: 'Score history is temporarily unavailable. Please try again.',
+	});
+});
+
+test('next prediction-history page appends revisions and advances the cursor', async () => {
+	let requestedAccount = '';
+	let requestedCursor: string | undefined;
+	const current = {
+		status: 'ready' as const,
+		items: [
+			prediction('acct-history', '2026-08-24T03:00:00Z'),
+			prediction('acct-history', '2026-08-24T02:00:00Z'),
+		],
+		nextCursor: 'history-page-2',
+		pagination: { status: 'idle' as const },
+	};
+
+	const next = await loadNextPredictionHistoryState({
+		listHistory: async (accountExternalId, cursor) => {
+			requestedAccount = accountExternalId;
+			requestedCursor = cursor;
+			return {
+				items: [prediction('acct-history', '2026-08-24T01:00:00Z')],
+				next_cursor: 'history-page-3',
+			};
+		},
+	}, 'acct-history', current);
+
+	assert.equal(requestedAccount, 'acct-history');
+	assert.equal(requestedCursor, 'history-page-2');
+	assert.deepEqual(
+		next.items.map((item) => item.scored_at),
+		[
+			'2026-08-24T03:00:00Z',
+			'2026-08-24T02:00:00Z',
+			'2026-08-24T01:00:00Z',
+		],
+	);
+	assert.equal(next.nextCursor, 'history-page-3');
+	assert.deepEqual(next.pagination, { status: 'idle' });
+});
+
+test('next prediction-history page exposes completion without another request', async () => {
+	let calls = 0;
+	const current = {
+		status: 'ready' as const,
+		items: [prediction('acct-history')],
+		pagination: { status: 'idle' as const },
+	};
+
+	const unchanged = await loadNextPredictionHistoryState({
+		listHistory: async () => {
+			calls += 1;
+			return { items: [] };
+		},
+	}, 'acct-history', current);
+
+	assert.equal(calls, 0);
+	assert.strictEqual(unchanged, current);
+});
+
+test('next prediction-history page preserves revisions and gives safe retry errors', async () => {
+	const current = {
+		status: 'ready' as const,
+		items: [prediction('acct-history')],
+		nextCursor: 'history-page-2',
+		pagination: { status: 'loading' as const },
+	};
+
+	const unavailable = await loadNextPredictionHistoryState({
+		listHistory: async () => {
+			throw new Error('backend detail must stay hidden');
+		},
+	}, 'acct-history', current);
+	assert.deepEqual(unavailable, {
+		...current,
+		pagination: {
+			status: 'error',
+			message: 'More score history is temporarily unavailable. Please try again.',
+		},
+	});
+
+	const unauthorized = await loadNextPredictionHistoryState({
+		listHistory: async () => {
+			throw new PredictionRequestError(401);
+		},
+	}, 'acct-history', current);
+	assert.deepEqual(unauthorized, {
+		...current,
+		pagination: {
+			status: 'error',
+			message: 'Your session has expired. Sign in again to load more score history.',
+		},
 	});
 });
 
@@ -360,6 +484,20 @@ test('score-history page renders account context and accessible first-page state
 	assert.match(template, /prediction\.scored_at/);
 });
 
+test('score-history page exposes accessible Load more, retry, and completion states', () => {
+	const component = read('risk/risk-history.ts');
+	const template = read('risk/risk-history.html');
+	assert.match(component, /loadNextPredictionHistoryState/);
+	assert.match(component, /loadMore/);
+	assert.match(component, /isLoadingMore/);
+	assert.match(component, /paginationErrorMessage/);
+	assert.match(template, /\(click\)="loadMore\(\)"/);
+	assert.match(template, /\[disabled\]="isLoadingMore\(\)"/);
+	assert.match(template, /Loading more score history/);
+	assert.match(template, /Try loading more history again/);
+	assert.match(template, /All score history revisions are shown/);
+});
+
 function jsonResponse(body: unknown, status = 200): Response {
 	return new Response(JSON.stringify(body), {
 		status,
@@ -367,14 +505,14 @@ function jsonResponse(body: unknown, status = 200): Response {
 	});
 }
 
-function prediction(accountExternalId: string) {
+function prediction(accountExternalId: string, scoredAt = '2026-08-24T00:00:00Z') {
 	return {
 		account_external_id: accountExternalId,
 		eligibility: 'eligible',
 		health_score: 72,
 		risk_band: 'medium',
 		score_version: 'RULES_BASELINE',
-		scored_at: '2026-08-24T00:00:00Z',
+		scored_at: scoredAt,
 		explanation_status: 'none',
 	};
 }
