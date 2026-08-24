@@ -36,7 +36,7 @@ export interface PredictionSource {
 }
 
 export interface PredictionHistorySource {
-	listHistory(accountExternalId: string): Promise<PredictionListResponse>;
+	listHistory(accountExternalId: string, cursor?: string): Promise<PredictionListResponse>;
 }
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
@@ -59,21 +59,17 @@ export class PredictionClient implements PredictionSource, PredictionHistorySour
 	}
 
 	async listCurrent(cursor?: string): Promise<PredictionListResponse> {
-		if (cursor !== undefined && cursor.length === 0) {
-			throw new PredictionRequestError(400);
-		}
-		const cursorQuery = cursor === undefined
-			? ''
-			: `&cursor=${encodeURIComponent(cursor)}`;
-		return this.list(`/v1/predictions?limit=50${cursorQuery}`);
+		return this.list(`/v1/predictions?limit=50${pageCursorQuery(cursor)}`);
 	}
 
-	async listHistory(accountExternalId: string): Promise<PredictionListResponse> {
+	async listHistory(accountExternalId: string, cursor?: string): Promise<PredictionListResponse> {
 		if (accountExternalId.length === 0) {
 			throw new PredictionRequestError(400);
 		}
 		const accountPath = encodeURIComponent(accountExternalId);
-		return this.list(`/v1/accounts/${accountPath}/prediction-history?limit=50`);
+		return this.list(
+			`/v1/accounts/${accountPath}/prediction-history?limit=50${pageCursorQuery(cursor)}`,
+		);
 	}
 
 	private async list(url: string): Promise<PredictionListResponse> {
@@ -124,23 +120,58 @@ export async function loadNextPredictionState(
 	source: PredictionSource,
 	current: Extract<PredictionViewState, { status: 'ready' }>,
 ): Promise<Extract<PredictionViewState, { status: 'ready' }>> {
+	return loadNextState(
+		current,
+		(cursor) => source.listCurrent(cursor),
+		(existing, incoming) => {
+			const seenAccounts = new Set(existing.map((item) => item.account_external_id));
+			const uniqueItems = incoming.filter((item) => {
+				if (seenAccounts.has(item.account_external_id)) {
+					return false;
+				}
+				seenAccounts.add(item.account_external_id);
+				return true;
+			});
+			return [...existing, ...uniqueItems];
+		},
+		'Your session has expired. Sign in again to load more predictions.',
+		'More predictions are temporarily unavailable. Please try again.',
+	);
+}
+
+export async function loadNextPredictionHistoryState(
+	source: PredictionHistorySource,
+	accountExternalId: string,
+	current: Extract<PredictionViewState, { status: 'ready' }>,
+): Promise<Extract<PredictionViewState, { status: 'ready' }>> {
+	return loadNextState(
+		current,
+		(cursor) => source.listHistory(accountExternalId, cursor),
+		(existing, incoming) => [...existing, ...incoming],
+		'Your session has expired. Sign in again to load more score history.',
+		'More score history is temporarily unavailable. Please try again.',
+	);
+}
+
+async function loadNextState(
+	current: Extract<PredictionViewState, { status: 'ready' }>,
+	request: (cursor: string) => Promise<PredictionListResponse>,
+	mergeItems: (
+		existing: readonly Prediction[],
+		incoming: readonly Prediction[],
+	) => readonly Prediction[],
+	unauthorizedMessage: string,
+	unavailableMessage: string,
+): Promise<Extract<PredictionViewState, { status: 'ready' }>> {
 	if (current.nextCursor === undefined) {
 		return current;
 	}
 
 	try {
-		const response = await source.listCurrent(current.nextCursor);
-		const seenAccounts = new Set(current.items.map((item) => item.account_external_id));
-		const uniqueItems = response.items.filter((item) => {
-			if (seenAccounts.has(item.account_external_id)) {
-				return false;
-			}
-			seenAccounts.add(item.account_external_id);
-			return true;
-		});
+		const response = await request(current.nextCursor);
 		return {
 			status: 'ready',
-			items: [...current.items, ...uniqueItems],
+			items: mergeItems(current.items, response.items),
 			...(response.next_cursor === undefined
 				? {}
 				: { nextCursor: response.next_cursor }),
@@ -149,8 +180,8 @@ export async function loadNextPredictionState(
 	}
 	catch (error) {
 		const message = error instanceof PredictionRequestError && error.status === 401
-			? 'Your session has expired. Sign in again to load more predictions.'
-			: 'More predictions are temporarily unavailable. Please try again.';
+			? unauthorizedMessage
+			: unavailableMessage;
 		return {
 			...current,
 			pagination: { status: 'error', message },
@@ -221,4 +252,14 @@ function optionalString(value: unknown): boolean {
 
 function optionalNumber(value: unknown): boolean {
 	return value === undefined || typeof value === 'number';
+}
+
+function pageCursorQuery(cursor?: string): string {
+	if (cursor === undefined) {
+		return '';
+	}
+	if (cursor.length === 0) {
+		throw new PredictionRequestError(400);
+	}
+	return `&cursor=${encodeURIComponent(cursor)}`;
 }
