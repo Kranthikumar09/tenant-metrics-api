@@ -2,9 +2,11 @@ package com.tenantmetrics.platform.security;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.function.Supplier;
 
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -15,6 +17,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -33,12 +36,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(BrowserSessionProperties.class)
 public class PlatformSecurityConfiguration {
 
 	@Bean
 	SecurityFilterChain platformSecurityFilterChain(
 			HttpSecurity http,
 			ApiKeyProperties apiKeyProperties,
+			AbsoluteSessionLifetimeFilter absoluteSessionLifetimeFilter,
 			ObjectProvider<ClientRegistrationRepository> clientRegistrations,
 			TenantOidcUserService tenantOidcUserService)
 			throws Exception {
@@ -74,6 +79,7 @@ public class PlatformSecurityConfiguration {
 								writeProblem(response, HttpStatus.UNAUTHORIZED, "Authentication is required"))
 						.accessDeniedHandler((request, response, exception) ->
 								writeProblem(response, HttpStatus.FORBIDDEN, "Access is denied")))
+				.addFilterBefore(absoluteSessionLifetimeFilter, SecurityContextHolderFilter.class)
 				.addFilterBefore(tenantResolutionFilter, CsrfFilter.class);
 
 		ClientRegistrationRepository registrationRepository = clientRegistrations.getIfAvailable();
@@ -95,6 +101,14 @@ public class PlatformSecurityConfiguration {
 	}
 
 	@Bean
+	AbsoluteSessionLifetimeFilter absoluteSessionLifetimeFilter(
+			BrowserSessionProperties properties,
+			ObjectProvider<Clock> clocks) {
+		return new AbsoluteSessionLifetimeFilter(
+				properties.absoluteLifetime(), clocks.getIfAvailable(Clock::systemUTC));
+	}
+
+	@Bean
 	CookieSerializer sessionCookieSerializer() {
 		DefaultCookieSerializer serializer = new DefaultCookieSerializer();
 		serializer.setCookieName("__Host-tm_session");
@@ -105,7 +119,7 @@ public class PlatformSecurityConfiguration {
 		return serializer;
 	}
 
-	private static void writeProblem(HttpServletResponse response, HttpStatus status, String detail)
+	static void writeProblem(HttpServletResponse response, HttpStatus status, String detail)
 			throws IOException {
 		response.setStatus(status.value());
 		response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
