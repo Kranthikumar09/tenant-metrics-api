@@ -4,19 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-028R — Console lists current predictions**
+**PR-029R — Score history**
 
 - Capacity: S
-- Why next: the console can now rely on a server-side browser session whose active tenant comes from verified membership; the first customer-visible slice is reading current predictions
-- Main dependency: PR-027R
-- In scope: Angular prediction-list client and risk-route rendering through the same-origin server session, loading/empty/error states, and proof that no API key or OAuth token enters browser storage or compiled assets
-- Out of scope: production IdP selection or credentials, tenant switching, score history, RBAC expansion, Redis, MongoDB, production deployment
+- Why next: the current prediction snapshot is now customer-visible; retaining immutable score versions is the smallest backend slice that makes risk changes auditable before the console visualizes them
+- Main dependency: PR-028R
+- In scope: PostgreSQL score-history migration and tenant-scoped persistence/read contract with fail-closed isolation tests
+- Out of scope: console charting, learned-model training, customer-facing explanations, retention automation, production deployment, Redis, MongoDB
 
 ## Later candidates
 
-| ID | Title | Capacity | Depends on | Notes |
-| --- | --- | --- | --- | --- |
-| PR-029R | Score history | S | PR-028R | Versioned score rows beyond current snapshot |
+No later candidate is committed. Split console history visualization from PR-029R after its API contract is proven.
 
 ## Completed
 
@@ -52,7 +50,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-024R | Lock the console browser authentication and session contract | implemented |
 | PR-025R | Add the PostgreSQL-backed browser session and CSRF foundation | implemented |
 | PR-026R | Add server-side tenant membership resolution | implemented |
-| PR-027R | Add a provider-neutral OIDC login adapter | implemented in this branch |
+| PR-027R | Add a provider-neutral OIDC login adapter | implemented |
+| PR-028R | Console lists current predictions | implemented in this branch |
 
 ## Intentionally not scheduled
 
