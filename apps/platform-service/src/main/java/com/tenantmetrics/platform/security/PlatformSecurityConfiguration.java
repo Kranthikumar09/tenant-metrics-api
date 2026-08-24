@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
@@ -32,7 +36,11 @@ import jakarta.servlet.http.HttpServletResponse;
 public class PlatformSecurityConfiguration {
 
 	@Bean
-	SecurityFilterChain platformSecurityFilterChain(HttpSecurity http, ApiKeyProperties apiKeyProperties)
+	SecurityFilterChain platformSecurityFilterChain(
+			HttpSecurity http,
+			ApiKeyProperties apiKeyProperties,
+			ObjectProvider<ClientRegistrationRepository> clientRegistrations,
+			TenantOidcUserService tenantOidcUserService)
 			throws Exception {
 		TenantResolutionFilter tenantResolutionFilter = new TenantResolutionFilter(apiKeyProperties);
 		CookieCsrfTokenRepository csrfRepository = new CookieCsrfTokenRepository();
@@ -67,6 +75,22 @@ public class PlatformSecurityConfiguration {
 						.accessDeniedHandler((request, response, exception) ->
 								writeProblem(response, HttpStatus.FORBIDDEN, "Access is denied")))
 				.addFilterBefore(tenantResolutionFilter, CsrfFilter.class);
+
+		ClientRegistrationRepository registrationRepository = clientRegistrations.getIfAvailable();
+		if (registrationRepository != null) {
+			DefaultOAuth2AuthorizationRequestResolver authorizationRequests =
+					new DefaultOAuth2AuthorizationRequestResolver(
+							registrationRepository, "/oauth2/authorization");
+			authorizationRequests.setAuthorizationRequestCustomizer(
+					OAuth2AuthorizationRequestCustomizers.withPkce());
+			http.oauth2Login(oauth2 -> oauth2
+					.authorizationEndpoint(endpoint -> endpoint
+							.authorizationRequestResolver(authorizationRequests))
+					.userInfoEndpoint(userInfo -> userInfo
+							.oidcUserService(tenantOidcUserService))
+					.failureHandler((request, response, exception) ->
+							writeProblem(response, HttpStatus.UNAUTHORIZED, "OIDC login failed")));
+		}
 		return http.build();
 	}
 

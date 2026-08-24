@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-026R — server-side tenant membership resolution.
+Last updated after PR-027R — provider-neutral OIDC login adapter.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Browser identities resolve by exact OIDC issuer and subject to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed. Production OIDC is not connected yet. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, a provider-neutral OIDC Authorization Code login adapter with S256 PKCE, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Validated OIDC issuer and subject resolve to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed, and tenant claims remain non-authoritative. The adapter activates only when an OIDC client registration exists; no production provider or credentials are configured. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-026r-tenant-membership-9d98`
+- Branch: `cursor/pr-027r-oidc-login-adapter-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Browser session decision: `docs/architecture/ADRs/ADR-002-console-browser-session.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
@@ -26,13 +26,21 @@ Last updated after PR-026R — server-side tenant membership resolution.
 | Area | State |
 | --- | --- |
 | Product docs | ADR-001, ADR-002, PRD, data classification, ADR template, threat model, events:batch, and cursor-paginated prediction-read OpenAPI exist |
-| Backend | `platform-service` with Actuator, JDBC, Flyway, PostgreSQL Spring Session, browser CSRF, enabled-membership resolution, API-key/session TenantContext, tenant-scoped event persistence, transactional outbox delivery to SQS, shared `RULES_BASELINE` scores, and cursor-paginated prediction reads; `worker` retains valid messages until their persisted event can be scored and permanently rejects invalid tenant tags |
-| Tests | platform-service context, health, PostgreSQL bootstrap, browser-session cookie/persistence/CSRF, membership resolution and deny-by-default routes, tenant-isolation, event-batch, persistence, transactional-outbox enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, bounded DLQ redrive, successful-delete, and rescore tests; console onboarding/risk contract tests |
+| Backend | `platform-service` with Actuator, JDBC, Flyway, PostgreSQL Spring Session, browser CSRF, conditional provider-neutral OIDC login, enabled-membership resolution, API-key/session TenantContext, tenant-scoped event persistence, transactional outbox delivery to SQS, shared `RULES_BASELINE` scores, and cursor-paginated prediction reads; `worker` retains valid messages until their persisted event can be scored and permanently rejects invalid tenant tags |
+| Tests | platform-service context, health, PostgreSQL bootstrap, browser-session cookie/persistence/CSRF, OIDC Authorization Code/state/nonce/PKCE contract, OIDC membership mapping and failure, membership resolution and deny-by-default routes, tenant-isolation, event-batch, persistence, transactional-outbox enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, bounded DLQ redrive, successful-delete, and rescore tests; console onboarding/risk contract tests |
 | Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, V3 `account_scores`, V4 `accepted_event_outbox`, V5 Spring Session tables, and V6 tenants/users/memberships; worker uses the same PostgreSQL store without owning Flyway |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
-| Angular console | onboarding and risk routes; no prediction fetch or browser authentication yet; API keys and OAuth tokens are forbidden from browser storage by ADR-002 |
+| Angular console | onboarding and risk routes; no prediction fetch or login UI yet; API keys and OAuth tokens are forbidden from browser storage by ADR-002 |
+
+## What PR-027R added
+
+- Spring Security OAuth2 Client support activates only when a provider-neutral client registration is supplied; no production IdP or credential was selected
+- Login initiation uses Authorization Code, OIDC state and nonce, and an enforced S256 PKCE challenge stored with the server-side authorization request
+- The OIDC user adapter maps only the framework-validated issuer and subject through `TenantMembershipResolver`; missing membership returns a generic authentication failure
+- The tenant-aware OIDC principal uses the internal user UUID as its name while `TenantResolutionFilter` binds the verified membership tenant and ignores tenant claims, headers, and query parameters
+- Invalid state returns JSON 401 without attempting a code exchange or redirecting to an HTML error page
 
 ## Known contradictions
 

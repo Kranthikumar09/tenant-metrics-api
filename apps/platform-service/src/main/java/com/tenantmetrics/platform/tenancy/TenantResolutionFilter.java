@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.tenantmetrics.platform.security.TenantSessionPrincipal;
+import com.tenantmetrics.platform.security.TenantOidcUser;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -49,12 +50,26 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
 		}
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null || !authentication.isAuthenticated()
-				|| !(authentication.getPrincipal() instanceof TenantSessionPrincipal principal)) {
+		if (authentication == null || !authentication.isAuthenticated()) {
 			writeUnauthorized(response);
 			return;
 		}
-		continueWithTenant(stripped, response, filterChain, principal.tenantId());
+		String tenantId = resolvedTenantId(authentication.getPrincipal());
+		if (tenantId == null) {
+			writeUnauthorized(response);
+			return;
+		}
+		continueWithTenant(stripped, response, filterChain, tenantId);
+	}
+
+	private static String resolvedTenantId(Object principal) {
+		if (principal instanceof TenantSessionPrincipal sessionPrincipal) {
+			return sessionPrincipal.tenantId();
+		}
+		if (principal instanceof TenantOidcUser oidcUser) {
+			return oidcUser.tenantId();
+		}
+		return null;
 	}
 
 	private static void continueWithTenant(HttpServletRequest request, HttpServletResponse response,
