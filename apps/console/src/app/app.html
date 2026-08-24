@@ -20,8 +20,8 @@
 			<p class="session-status" aria-live="polite">
 				@if (logoutStatus().status === 'signed-out') {
 					Signed out securely.
-				} @else if (logoutStatus().status === 'error') {
-					{{ logoutStatus().message }}
+				} @else if (logoutErrorMessage(); as errorMessage) {
+					{{ errorMessage }}
 				}
 			</p>
 		</div>

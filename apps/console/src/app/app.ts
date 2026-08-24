@@ -18,6 +18,10 @@ export class App {
 	private readonly router = inject(Router);
 
 	protected readonly logoutStatus = signal<LogoutStatus>({ status: 'idle' });
+	protected readonly logoutErrorMessage = (): string | undefined => {
+		const status = this.logoutStatus();
+		return status.status === 'error' ? status.message : undefined;
+	};
 
 	protected async signOut(): Promise<void> {
 		if (this.logoutStatus().status === 'pending') {
