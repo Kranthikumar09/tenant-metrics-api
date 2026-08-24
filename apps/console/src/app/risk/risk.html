@@ -1,4 +1,46 @@
 <section>
-	<h1>Account risk</h1>
-	<p>Current RULES_BASELINE scores will appear here. This shell does not load predictions yet.</p>
+	<header>
+		<p>Risk workspace</p>
+		<h1>Current account risk</h1>
+		<p>Tenant-scoped RULES_BASELINE scores from your secure browser session.</p>
+	</header>
+
+	@if (state().status === 'loading') {
+		<p role="status" aria-live="polite">Loading current predictions…</p>
+	} @else if (state().status === 'empty') {
+		<div role="status">
+			<h2>No predictions yet</h2>
+			<p>Send account events to generate the first current risk scores.</p>
+		</div>
+	} @else if (state().status === 'error') {
+		<div role="alert">
+			<h2>We could not load predictions</h2>
+			<p>{{ errorMessage() }}</p>
+			<button type="button" (click)="retry()">Try again</button>
+		</div>
+	} @else {
+		<table>
+			<caption>Current tenant-scoped account risk scores</caption>
+			<thead>
+				<tr>
+					<th scope="col">Account</th>
+					<th scope="col">Health score</th>
+					<th scope="col">Risk band</th>
+					<th scope="col">Eligibility</th>
+					<th scope="col">Scored</th>
+				</tr>
+			</thead>
+			<tbody>
+				@for (prediction of items(); track prediction.account_external_id) {
+					<tr>
+						<td>{{ prediction.account_external_id }}</td>
+						<td>{{ prediction.health_score ?? '—' }}</td>
+						<td>{{ prediction.risk_band ?? 'Not available' }}</td>
+						<td>{{ prediction.eligibility }}</td>
+						<td>{{ prediction.scored_at | date: 'medium' }}</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
 </section>
