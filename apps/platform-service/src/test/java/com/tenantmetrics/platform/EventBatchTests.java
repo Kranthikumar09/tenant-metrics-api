@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -144,6 +145,24 @@ class EventBatchTests extends AbstractPlatformPostgresTest {
 						.content(events.toString()))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status").value(400));
+	}
+
+	@Test
+	void oversizedJsonBodyIsRejectedWithTenantSafeProblemDetails() throws Exception {
+		String oversizedBody = "{\"events\":[],\"padding\":\""
+				+ "x".repeat(1024 * 1024)
+				+ "\"}";
+
+		mockMvc.perform(post("/v1/events:batch")
+					.contentType(MediaType.APPLICATION_JSON)
+					.header("X-Api-Key", TENANT_A_KEY)
+					.header("Idempotency-Key", "idem-a-body-oversize")
+					.content(oversizedBody))
+				.andExpect(status().isPayloadTooLarge())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.status").value(413))
+				.andExpect(jsonPath("$.detail")
+						.value("Event batch request body exceeds the configured limit"));
 	}
 
 	@Test
