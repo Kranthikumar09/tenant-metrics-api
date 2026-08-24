@@ -9,6 +9,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -24,6 +25,7 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
@@ -56,8 +58,9 @@ public class PlatformSecurityConfiguration {
 				.httpOnly(false)
 				.sameSite("Lax"));
 
-		RequestMatcher apiKeyAuthenticationSelected = request ->
-				StringUtils.hasText(request.getHeader("X-Api-Key"));
+		RequestMatcher machineApiPath = PathPatternRequestMatcher.pathPattern("/v1/**");
+		RequestMatcher apiKeyAuthenticationSelected = request -> machineApiPath.matches(request)
+				&& StringUtils.hasText(request.getHeader("X-Api-Key"));
 
 		http
 				.authorizeHttpRequests(authorize -> authorize
@@ -72,7 +75,16 @@ public class PlatformSecurityConfiguration {
 				.requestCache(cache -> cache.disable())
 				.formLogin(AbstractHttpConfigurer::disable)
 				.httpBasic(AbstractHttpConfigurer::disable)
-				.logout(AbstractHttpConfigurer::disable)
+				.logout(logout -> logout
+						.logoutRequestMatcher(PathPatternRequestMatcher.pathPattern(HttpMethod.POST, "/logout"))
+						.invalidateHttpSession(true)
+						.clearAuthentication(true)
+						.deleteCookies("__Host-tm_session")
+						.logoutSuccessHandler((request, response, authentication) -> {
+							CsrfToken freshToken = csrfRepository.generateToken(request);
+							csrfRepository.saveToken(freshToken, request, response);
+							response.setStatus(HttpStatus.NO_CONTENT.value());
+						}))
 				.sessionManagement(session -> session.sessionFixation(fixation -> fixation.changeSessionId()))
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint((request, response, exception) ->
