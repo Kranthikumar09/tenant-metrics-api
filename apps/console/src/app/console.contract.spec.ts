@@ -84,6 +84,26 @@ test('package manifest stays free of MongoDB and Redis', () => {
 	}
 });
 
+test('local development proxies only API and authentication paths to platform-service', () => {
+	const workspace = JSON.parse(readFileSync(join(appDir, '../../angular.json'), 'utf8')) as {
+		projects: { console: { architect: { serve: { options: { proxyConfig?: string } } } } };
+	};
+	assert.equal(
+		workspace.projects.console.architect.serve.options.proxyConfig,
+		'proxy.conf.json',
+	);
+
+	const proxy = JSON.parse(readFileSync(join(appDir, '../../proxy.conf.json'), 'utf8')) as
+		Record<string, unknown>;
+	assert.deepEqual(Object.keys(proxy).sort(), ['/login', '/oauth2', '/v1']);
+	for (const path of Object.keys(proxy)) {
+		assert.deepEqual(proxy[path], {
+			target: 'http://localhost:8080',
+			changeOrigin: false,
+		});
+	}
+});
+
 test('prediction client uses only the same-origin browser session', async () => {
 	let requestedUrl = '';
 	let requestedInit: RequestInit | undefined;
