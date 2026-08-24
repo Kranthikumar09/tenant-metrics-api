@@ -1,9 +1,15 @@
 package com.tenantmetrics.platform;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -13,6 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -39,7 +46,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @AutoConfigureMockMvc
-@Import(BrowserSessionSecurityTests.SessionProbeConfiguration.class)
+@Import({BrowserSessionSecurityTests.SessionProbeConfiguration.class,
+		BrowserSessionSecurityTests.AbsoluteLifetimeClockConfiguration.class})
 class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 
 	@Autowired
@@ -50,6 +58,14 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 
 	@Autowired
 	private TenantMembershipResolver membershipResolver;
+
+	@Autowired
+	private AdjustableClock absoluteSessionClock;
+
+	@BeforeEach
+	void resetAbsoluteSessionClock() {
+		absoluteSessionClock.setInstant(Instant.EPOCH);
+	}
 
 	@Test
 	void sessionIsPersistedInPostgresWithProductionCookieAttributes() throws Exception {
@@ -128,6 +144,47 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
 				.andExpect(jsonPath("$.status").value(401))
 				.andExpect(result -> assertThat(result.getResponse().getRedirectedUrl()).isNull());
+	}
+
+	@Test
+	void browserActivityCannotExtendTheEightHourAbsoluteLifetime() throws Exception {
+		MockHttpSession session = new MockHttpSession();
+		Instant createdAt = Instant.ofEpochMilli(session.getCreationTime());
+
+		absoluteSessionClock.setInstant(createdAt.plus(Duration.ofHours(8)).minusSeconds(1));
+		mockMvc.perform(get("/v1/tenant-context")
+					.session(session)
+					.with(tenantSession("user-a", "tenant-a")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tenantId").value("tenant-a"));
+
+		absoluteSessionClock.setInstant(createdAt.plus(Duration.ofHours(8)));
+		mockMvc.perform(get("/v1/tenant-context")
+					.session(session)
+					.with(tenantSession("user-a", "tenant-a")))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.status").value(401))
+				.andExpect(result -> assertThat(result.getResponse().getRedirectedUrl()).isNull());
+
+		org.junit.jupiter.api.Assertions.assertThrows(
+				IllegalStateException.class, session::getCreationTime);
+	}
+
+	@Test
+	void expiredBrowserSessionDoesNotChangeApiKeyAuthentication() throws Exception {
+		MockHttpSession session = new MockHttpSession();
+		Instant createdAt = Instant.ofEpochMilli(session.getCreationTime());
+		absoluteSessionClock.setInstant(createdAt.plus(Duration.ofHours(8)));
+
+		mockMvc.perform(get("/v1/tenant-context")
+					.session(session)
+					.header("X-Api-Key", "tenant-a-test-key"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tenantId").value("tenant-a"));
+
+		org.junit.jupiter.api.Assertions.assertThrows(
+				IllegalStateException.class, session::getCreationTime);
 	}
 
 	private int sessionCount() {
@@ -216,6 +273,39 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 		@Bean
 		SessionProbeController sessionProbeController() {
 			return new SessionProbeController();
+		}
+	}
+
+	@TestConfiguration(proxyBeanMethods = false)
+	static class AbsoluteLifetimeClockConfiguration {
+
+		@Bean
+		AdjustableClock absoluteSessionClock() {
+			return new AdjustableClock();
+		}
+	}
+
+	static final class AdjustableClock extends Clock {
+
+		private Instant instant = Instant.EPOCH;
+
+		void setInstant(Instant instant) {
+			this.instant = instant;
+		}
+
+		@Override
+		public ZoneId getZone() {
+			return ZoneOffset.UTC;
+		}
+
+		@Override
+		public Clock withZone(ZoneId zone) {
+			return Clock.fixed(instant, zone);
+		}
+
+		@Override
+		public Instant instant() {
+			return instant;
 		}
 	}
 
