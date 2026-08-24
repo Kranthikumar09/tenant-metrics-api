@@ -41,7 +41,7 @@ Flyway V7 now retains every current-score insert/update as an append-only tenant
 - Flyway V7 backfills current scores and appends every later `account_scores` insert/update to tenant-owned history, including writes from the platform and worker
 - PostgreSQL rejects history updates, deletes, and truncation so recorded score revisions are append-only
 - `GET /v1/accounts/{account_external_id}/prediction-history` returns newest-first pages with a bounded opaque cursor and derives tenant scope only from verified `TenantContext`
-- Cross-tenant guessed account IDs return 404; invalid limits/cursors return Problem Details; the cursor contains only a history sequence and no tenant/account authority
+- Cross-tenant guessed account IDs return 404; invalid limits/cursors return Problem Details; each cursor is a random identifier resolved only inside the verified tenant/account scope
 - Console history visualization, retention deletion, learned models, explanations, and infrastructure remain out of scope
 
 ## What PR-028R added
