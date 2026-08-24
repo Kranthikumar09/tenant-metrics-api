@@ -99,7 +99,7 @@ require_heading "docs/agent/backlog.md" "## Next recommended PR"
 require_heading "docs/agent/backlog.md" "PR-002"
 
 require_heading "docs/agent/decisions-needed.md" "## Open decisions"
-require_heading "docs/agent/decisions-needed.md" "modular monolith"
+require_heading "docs/agent/decisions-needed.md" "/apps/platform-service"
 
 require_file "docs/architecture/ADRs/ADR-001-mvp-architecture.md"
 require_file "docs/architecture/ADRs/ADR-002-console-browser-session.md"
@@ -122,24 +122,20 @@ require_heading "docs/architecture/ADRs/ADR-002-console-browser-session.md" "Pos
 require_heading "docs/architecture/ADRs/ADR-002-console-browser-session.md" "must never enter browser storage"
 require_heading "docs/architecture/ADRs/ADR-002-console-browser-session.md" "TenantContext"
 require_heading "docs/architecture/context-map.md" "## Current modules"
-require_heading "docs/architecture/context-map.md" "## Target modules"
-require_heading "docs/architecture/context-map.md" "Freeze"
+require_heading "docs/architecture/context-map.md" "## Retired scaffold"
 require_heading "docs/architecture/context-map.md" "rules-scoring"
 
 require_heading "AGENTS.md" "## Approved architecture contract"
 require_heading "AGENTS.md" "ADR-001 is the approved architecture contract"
-require_heading "AGENTS.md" "frozen legacy modules"
-require_heading "AGENTS.md" "must not build on the frozen modules"
+require_heading "AGENTS.md" 'retired `api-gateway`, `core-service`, and `common-models` scaffold must not be recreated'
 require_heading "AGENTS.md" "must not introduce MongoDB or Redis"
-require_heading "AGENTS.md" "MongoDB and Redis removal from legacy modules requires separate approval"
 require_heading "AGENTS.md" "/apps/worker"
 require_heading "AGENTS.md" "LocalStack"
 
 forbid_text "AGENTS.md" "Separate worker infrastructure"
 forbid_text "AGENTS.md" "Do not provision or introduce the following during the MVP unless separately approved:"
 
-require_heading "docs/architecture/context-map.md" "must not build on the frozen modules"
-require_heading "docs/architecture/context-map.md" "frozen legacy modules"
+require_heading "docs/architecture/context-map.md" "Do not recreate those paths"
 
 # PR-034R retirement contract: the approved applications are the only live
 # reactor/runtime paths, and the abandoned scaffold cannot silently return.

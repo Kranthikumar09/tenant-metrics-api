@@ -6,7 +6,7 @@
 
 ## Context
 
-The repository currently contains a three-module Maven scaffold (`api-gateway`, `core-service`, `common-models`). That split does not match the approved product shape. `core-service` also declares Spring Data MongoDB, and Cloud Agent scripts install MongoDB and Redis, even though no application code uses either store.
+When this ADR was accepted, the repository contained a three-module Maven scaffold (`api-gateway`, `core-service`, `common-models`). That split did not match the approved product shape. `core-service` also declared Spring Data MongoDB, and Cloud Agent scripts installed MongoDB and Redis, even though no application code used either store.
 
 Two earlier baselines conflicted:
 
@@ -28,26 +28,23 @@ The MVP architecture is:
 - Redis is not approved unless a later ADR states a concrete requirement.
 - Microservice extraction is deferred until measured scaling or ownership needs exist.
 
-Existing `api-gateway`, `core-service`, and `common-models` are frozen placeholders. They are not the target applications. They must not be deleted, renamed, or have dependencies removed until a later PR lists the exact files and receives approval.
+At acceptance, `api-gateway`, `core-service`, and `common-models` were frozen placeholders pending an exact cleanup proposal. PR-034R later received explicit approval to retire every file in those modules and remove their unused reactor dependencies. They are not part of the approved architecture and must not be recreated.
 
 ## Consequences
 
-- New feature code belongs in the approved `apps/` layout, created by later PRs.
-- New implementation must not build on the frozen modules.
+- Feature code belongs in the approved `apps/` layout; shared domain code may live under `libs/`.
+- New implementation must not recreate or depend on the retired scaffold.
 - Provider interfaces should wrap queues, object storage, authentication, and explanations so LocalStack-compatible local substitutes can be replaced later.
 - `AGENTS.md` and `docs/architecture/context-map.md` must stay consistent with this ADR. SQS, S3, and `/apps/worker` are approved here; they are not forbidden.
-- This ADR does not add Docker Compose, LocalStack, or application modules.
+- The root reactor and local developer tooling must describe only the approved application layout.
 
-## Non-goals
+## Original decision scope
 
-- No application code, POM, Docker, or `.cursor/` script changes.
-- No deletion of existing modules or dependencies.
-- No product PRD, threat model, or feature implementation.
+The original documentation-only ADR did not itself change application code, POMs, Docker, or `.cursor/` scripts. Those changes were delivered through separately approved PRs.
 
 ## Follow-up
 
-1. Create `/apps/platform-service` as an independently buildable module that boots without MongoDB or Redis.
-2. Later, list and remove MongoDB dependencies and daemons only after explicit approval.
-3. Later, list and remove Redis from Cloud Agent scripts only after explicit approval.
-4. Add Docker Compose for PostgreSQL and LocalStack-compatible SQS/S3.
-5. Add `/apps/worker` and `/apps/console` in separate PRs.
+1. Completed: create `/apps/platform-service` without MongoDB or Redis.
+2. Completed in PR-034R: retire the unused scaffold, MongoDB dependency, Redis/MongoDB bootstrap, and Spring Cloud gateway BOM.
+3. Completed: add Docker Compose for PostgreSQL and LocalStack-compatible SQS/S3.
+4. Completed: add `/apps/worker` and `/apps/console` in separate PRs.

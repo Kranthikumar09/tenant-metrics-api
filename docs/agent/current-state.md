@@ -1,23 +1,23 @@
 # Current state
 
-Last updated for PR-033R — same-origin Angular development proxy.
+Last updated for PR-034R — retire the legacy scaffold.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, a provider-neutral OIDC Authorization Code login adapter with S256 PKCE, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Validated OIDC issuer and subject resolve to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed, and tenant claims remain non-authoritative. The adapter activates only when an OIDC client registration exists; no production provider or credentials are configured. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell whose current-risk and account-history routes follow backend cursors through explicit Load more interactions using the same-origin opaque server session. Both views provide loading, empty, safe error, retry, populated, pagination-loading, and pagination-completion states. The console has no client tenant switch and never reads or stores API keys, bearer/OIDC tokens, tenant headers, or the HttpOnly session cookie. Pagination cursors remain only in in-memory view state. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, a provider-neutral OIDC Authorization Code login adapter with S256 PKCE, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Validated OIDC issuer and subject resolve to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed, and tenant claims remain non-authoritative. The adapter activates only when an OIDC client registration exists; no production provider or credentials are configured. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell whose current-risk and account-history routes follow backend cursors through explicit Load more interactions using the same-origin opaque server session. Both views provide loading, empty, safe error, retry, populated, pagination-loading, and pagination-completion states. The console has no client tenant switch and never reads or stores API keys, bearer/OIDC tokens, tenant headers, or the HttpOnly session cookie. Pagination cursors remain only in in-memory view state. The retired scaffold is gone, and no active module has MongoDB or Redis. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
 Flyway V7 now retains every current-score insert/update as an append-only tenant-owned revision. The platform exposes newest-first cursor pages at `GET /v1/accounts/{account_external_id}/prediction-history`; the cursor carries no tenant or account authority.
 
-- Branch: `cursor/pr-033r-same-origin-dev-proxy-9d98`
+- Branch: `cursor/pr-034r-retire-legacy-scaffold-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Browser session decision: `docs/architecture/ADRs/ADR-002-console-browser-session.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
 - Threat model: `docs/security/threat-model.md`
 - Context map: `docs/architecture/context-map.md`
 - Language: Java 21
-- Build: Maven wrapper, Spring Boot 4.1.1 parent, Spring Cloud 2025.1.2 BOM
-- Frozen legacy modules: `common-models`, `core-service`, `api-gateway`
-- Target modules: `/apps/platform-service` (active modular monolith), `/apps/worker` (active queue consumer), `/apps/console` (onboarding/current-risk/history shell)
+- Build: Maven wrapper and Spring Boot 4.1.1 parent; the reactor contains only the two active Java apps and shared rules library
+- Legacy scaffold retirement: complete (`common-models`, `core-service`, and `api-gateway` removed)
+- Active modules: `/apps/platform-service` (modular monolith), `/apps/worker` (queue consumer), `/apps/console` (onboarding/current-risk/history shell), `/libs/rules-scoring` (shared rules domain)
 - Frontend: Angular console with cursor-paginated current-risk and account-history reads
 - Database migrations: `V1__platform_bootstrap.sql`, `V2__tenant_scoped_events.sql`, `V3__account_scores.sql`, `V4__accepted_event_outbox.sql`, `V5__browser_sessions.sql`, `V6__tenant_memberships.sql`, `V7__account_score_history.sql`
 - CI: `.github/workflows/verify.yml` runs `./scripts/verify.sh`
@@ -31,10 +31,18 @@ Flyway V7 now retains every current-score insert/update as an append-only tenant
 | Backend | `platform-service` with Actuator, JDBC, Flyway, PostgreSQL Spring Session, browser CSRF, conditional provider-neutral OIDC login, enabled-membership resolution, API-key/session TenantContext, tenant-scoped event persistence, transactional outbox delivery to SQS, shared `RULES_BASELINE` current/history scores, and cursor-paginated prediction reads; `worker` retains valid messages until their persisted event can be scored and permanently rejects invalid tenant tags |
 | Tests | platform-service context, health, PostgreSQL bootstrap, browser-session cookie/persistence/CSRF, OIDC Authorization Code/state/nonce/PKCE contract, OIDC membership mapping and failure, membership resolution and deny-by-default routes, tenant-isolation, event-batch, persistence, transactional-outbox enqueue, rules-score, prediction-read, prediction-cursor, and immutable tenant-history tests; shared rules-scoring unit tests; worker context-load, consume, bounded DLQ redrive, successful-delete, and rescore tests; console onboarding/current-risk/history contract tests |
 | Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, V3 `account_scores`, V4 `accepted_event_outbox`, V5 Spring Session tables, V6 tenants/users/memberships, and V7 append-only `account_score_history`; worker uses the same PostgreSQL store without owning Flyway |
-| Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
+| Local environment | Cursor builds the approved Maven reactor and console, starts Compose PostgreSQL/LocalStack, then exposes active app terminals only |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
 | Angular console | onboarding, current-risk, and account-history routes; both risk views use explicit cursor-backed Load more controls with loading, completion, and safe retry states, the same-origin session, and semantic tables; local `ng serve` proxies only API/authentication paths to `platform-service`; no login UI yet; API keys and OAuth tokens are forbidden from browser storage by ADR-002 |
+
+## What PR-034R added
+
+- Removed every file in the unused `api-gateway`, `core-service`, and `common-models` scaffold after explicit approval
+- Removed their root reactor entries, unused Spring Cloud BOM, and obsolete shared-model dependency management
+- Replaced Cursor's MongoDB/Redis/legacy-app setup with the approved PostgreSQL, LocalStack, platform-service, worker, and console flow
+- Added repository guardrails so the retired paths and dependencies cannot silently return
+- Changed no active application behavior, APIs, migrations, tenant authority, or security rules
 
 ## What PR-033R added
 
@@ -91,11 +99,8 @@ Flyway V7 now retains every current-score insert/update as an append-only tenant
 
 Still open:
 
-1. MongoDB and Redis remain installed/declared on frozen legacy modules. Removal requires a later PR that lists exact files and is approved.
-2. `core-service` uses package `com.tenatmetrics`; other modules use `com.tenantmetrics`.
-3. `ApiResponse` is a generic envelope; the blueprint requires Problem Details–compatible errors.
-4. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
-5. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
+1. Blueprint suggested one AWS region; ADR-001 did not select AWS. Region remains `BLOCKED` in the PRD.
+2. The M0 exit gate asked for a named churn label; the PRD still marks the default label `BLOCKED`.
 
 ## What PR-026R added
 

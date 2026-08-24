@@ -1,20 +1,8 @@
 # Current architecture context
 
-Short map of what exists today versus the target locked by `ADR-001`. This is not a full system design. `AGENTS.md`, this file, and ADR-001 must agree: ADR-001 is the approved architecture contract.
+Short map of the current architecture locked by `ADR-001`. This is not a full system design. `AGENTS.md`, this file, and ADR-001 must agree: ADR-001 is the approved architecture contract.
 
 ## Current modules
-
-`api-gateway`, `core-service`, and `common-models` are frozen legacy modules. New implementation must not build on the frozen modules.
-
-| Module | Role today | Allowed to change in feature PRs? |
-| --- | --- | --- |
-| `common-models` | Shared DTO jar (`TenantDto`, `ApiResponse`) | Frozen legacy module. Do not treat as `apps/console`. |
-| `core-service` | Empty Spring Boot web app with JPA, PostgreSQL driver, and MongoDB starters | Frozen legacy module. Do not treat as `apps/worker` or `platform-service`. |
-| `api-gateway` | Empty Spring Cloud Gateway app | Frozen legacy module. Do not treat as the public monolith. |
-
-`/apps/platform-service` implements tenant-safe ingestion, rules scoring, prediction reads, PostgreSQL sessions, CSRF, and server-side tenant membership resolution. `/apps/worker` is a non-web same-version SQS consumer with tenant-tag validation, rescoring, retry, and DLQ behavior. `/apps/console` remains an Angular onboarding and risk shell. Local Compose provides PostgreSQL and LocalStack SQS/S3.
-
-## Target modules
 
 | Path | Role | Status |
 | --- | --- | --- |
@@ -25,16 +13,14 @@ Short map of what exists today versus the target locked by `ADR-001`. This is no
 
 PostgreSQL is the only approved primary database. Local queues and object storage may use SQS/S3 or LocalStack-compatible substitutes. MongoDB is not approved. Redis is not approved unless a later ADR says so.
 
-## Freeze
+## Retired scaffold
 
-Do not delete, move, or strip dependencies from `api-gateway`, `core-service`, or `common-models` until a later PR lists the exact files and is approved. MongoDB and Redis removal from legacy modules requires separate approval.
+PR-034R removed `api-gateway`, `core-service`, and `common-models` after the user approved their exact retirement. They were unused placeholders and no approved module depended on them. Their Spring Cloud, MongoDB, and Redis wiring was not part of the application.
 
-New modules must not introduce MongoDB or Redis.
+Do not recreate those paths, add an extra gateway layer, or reintroduce MongoDB or Redis without a later ADR and explicit approval.
 
-New work goes into the target `apps/` modules after those modules exist. New implementation must not build on the frozen modules.
+New work goes into the current `apps/` modules and inward-facing shared libraries under `libs/`.
 
 ## Dependency direction
 
-Target modules should depend inward on domain contracts, not on controllers or cloud clients. Queue, storage, authentication, and explanation adapters stay behind interfaces.
-
-Current modules do not yet implement that shape. They remain placeholders only.
+Modules depend inward on domain contracts, not on controllers or cloud clients. Queue, storage, authentication, and explanation adapters stay behind interfaces.

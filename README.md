@@ -2,17 +2,18 @@
 
 Multi-Tenant Churn Intelligence SaaS for subscription businesses. The product identifies accounts likely to churn, explains measurable drivers, and feeds existing retention workflows.
 
-This repository is in foundation setup. There is no customer-facing score or ingestion API yet.
+The repository contains a working tenant-safe ingestion and rules-scoring spine, prediction read APIs, a background worker, and an Angular risk console. Learned-model training, production deployment, and several SaaS control-plane capabilities remain future work.
 
 ## Current shape
 
-The Maven reactor contains three placeholder modules from an earlier scaffold:
+The approved application layout is:
 
-- `common-models`
-- `core-service`
-- `api-gateway`
+- `/apps/platform-service` — Spring Boot modular monolith and HTTP API
+- `/apps/worker` — same-version background queue processor
+- `/apps/console` — Angular console
+- `/libs/rules-scoring` — shared rules-baseline domain library
 
-The approved MVP direction is a Spring Boot modular monolith with PostgreSQL, not a microservice split and not MongoDB. Architecture is locked by ADR-001. The product contract is `docs/product/PRD.md`.
+The abandoned `api-gateway`, `core-service`, and `common-models` scaffold has been retired. The MVP uses PostgreSQL plus LocalStack-compatible SQS/S3, not MongoDB, Redis, or an extra gateway service. Architecture is locked by ADR-001. The product contract is `docs/product/PRD.md`.
 
 ## Agent and product memory
 

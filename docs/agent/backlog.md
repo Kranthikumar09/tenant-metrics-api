@@ -4,7 +4,7 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-034R — Enforce the absolute browser-session lifetime**
+**PR-035R — Enforce the absolute browser-session lifetime**
 
 - Capacity: S
 - Why next: ADR-002 requires an eight-hour absolute browser-session lifetime, while the current PostgreSQL session foundation enforces only the 30-minute idle timeout; closing this accepted security gap bounds a stolen session even when it remains active
@@ -14,7 +14,7 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Later candidates
 
-Select the next candidate after PR-034R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
+Select the next candidate after PR-035R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
 
 ## Completed
 
@@ -56,12 +56,11 @@ Select the next candidate after PR-034R using the product contract and remaining
 | PR-030R | Console shows account score history | implemented |
 | PR-031R | Paginate the current prediction list | implemented |
 | PR-032R | Paginate account score history | implemented |
-| PR-033R | Add the same-origin Angular development proxy | implemented in this branch |
+| PR-033R | Add the same-origin Angular development proxy | implemented |
+| PR-034R | Retire the legacy scaffold and align local tooling | implemented in this branch |
 
 ## Intentionally not scheduled
 
-- Deleting or collapsing `api-gateway`, `core-service`, or `common-models` without an exact file list and approval
-- Removing MongoDB or Redis without an exact file list and approval
 - AWS WAF, API Gateway, Bedrock, Kubernetes, Terraform/CDK
 - Learned-model training and customer-facing AI explanations
 - Microservice extraction
