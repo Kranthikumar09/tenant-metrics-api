@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import {
 	PredictionClient,
@@ -9,7 +10,7 @@ import {
 
 @Component({
 	selector: 'app-risk',
-	imports: [DatePipe],
+	imports: [DatePipe, RouterLink],
 	templateUrl: './risk.html',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
