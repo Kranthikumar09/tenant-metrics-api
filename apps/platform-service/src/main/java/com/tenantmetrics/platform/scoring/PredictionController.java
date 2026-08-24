@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -50,9 +51,9 @@ class PredictionController {
 		if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
 			return problem(HttpStatus.BAD_REQUEST, "limit must be between 1 and 500");
 		}
-		Long beforeHistoryId;
+		UUID historyCursor;
 		try {
-			beforeHistoryId = decodeHistoryCursor(cursor);
+			historyCursor = decodeHistoryCursor(cursor);
 		}
 		catch (IllegalArgumentException ex) {
 			return problem(HttpStatus.BAD_REQUEST, "cursor is invalid");
@@ -60,13 +61,21 @@ class PredictionController {
 		if (accountScoreStore.find(tenant.tenantId(), accountExternalId).isEmpty()) {
 			return problem(HttpStatus.NOT_FOUND, "prediction history not found");
 		}
+		Long beforeHistoryId = null;
+		if (historyCursor != null) {
+			beforeHistoryId = accountScoreStore.resolveHistoryCursor(
+					tenant.tenantId(), accountExternalId, historyCursor).orElse(null);
+			if (beforeHistoryId == null) {
+				return problem(HttpStatus.BAD_REQUEST, "cursor is invalid");
+			}
+		}
 		List<HistoricalScore> rows = accountScoreStore.listHistory(
 				tenant.tenantId(), accountExternalId, beforeHistoryId, pageSize + 1);
 		boolean hasMore = rows.size() > pageSize;
 		if (hasMore) {
 			rows = List.copyOf(rows.subList(0, pageSize));
 		}
-		String nextCursor = hasMore ? encodeHistoryCursor(rows.getLast().historyId()) : null;
+		String nextCursor = hasMore ? encodeHistoryCursor(rows.getLast().cursorId()) : null;
 		return ResponseEntity.ok(new PredictionListResponse(
 				rows.stream().map(HistoricalScore::score).map(PredictionController::toResponse).toList(),
 				nextCursor));
@@ -128,27 +137,24 @@ class PredictionController {
 		}
 	}
 
-	private static String encodeHistoryCursor(long historyId) {
+	private static String encodeHistoryCursor(UUID cursorId) {
 		return Base64.getUrlEncoder().withoutPadding()
-				.encodeToString(Long.toString(historyId).getBytes(StandardCharsets.UTF_8));
+				.encodeToString(cursorId.toString().getBytes(StandardCharsets.UTF_8));
 	}
 
-	private static Long decodeHistoryCursor(String cursor) {
+	private static UUID decodeHistoryCursor(String cursor) {
 		if (cursor == null || cursor.isBlank()) {
 			return null;
 		}
 		try {
 			byte[] bytes = Base64.getUrlDecoder().decode(cursor);
 			String decoded = new String(bytes, StandardCharsets.UTF_8);
+			UUID cursorId = UUID.fromString(decoded);
 			if (!Arrays.equals(bytes, decoded.getBytes(StandardCharsets.UTF_8))
-					|| !decoded.matches("[1-9][0-9]{0,18}")) {
+					|| !cursorId.toString().equals(decoded)) {
 				throw new IllegalArgumentException("cursor");
 			}
-			long historyId = Long.parseLong(decoded);
-			if (historyId < 1) {
-				throw new IllegalArgumentException("cursor");
-			}
-			return historyId;
+			return cursorId;
 		}
 		catch (IllegalArgumentException ex) {
 			throw new IllegalArgumentException("cursor");
