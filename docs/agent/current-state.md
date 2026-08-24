@@ -1,12 +1,14 @@
 # Current state
 
-Last updated for PR-028R — console prediction list.
+Last updated for PR-029R — immutable tenant score history.
 
 ## Snapshot
 
 `/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, a provider-neutral OIDC Authorization Code login adapter with S256 PKCE, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Validated OIDC issuer and subject resolve to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed, and tenant claims remain non-authoritative. The adapter activates only when an OIDC client registration exists; no production provider or credentials are configured. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell whose risk route lists the first 50 current predictions through the same-origin opaque server session with loading, empty, error, and populated states. It has no client tenant switch and never reads or stores API keys, bearer/OIDC tokens, tenant headers, or the HttpOnly session cookie. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-028r-console-predictions-9d98`
+Flyway V7 now retains every current-score insert/update as an append-only tenant-owned revision. The platform exposes newest-first cursor pages at `GET /v1/accounts/{account_external_id}/prediction-history`; the cursor carries no tenant or account authority.
+
+- Branch: `cursor/pr-029r-score-history-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Browser session decision: `docs/architecture/ADRs/ADR-002-console-browser-session.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
@@ -17,7 +19,7 @@ Last updated for PR-028R — console prediction list.
 - Frozen legacy modules: `common-models`, `core-service`, `api-gateway`
 - Target modules: `/apps/platform-service` (active modular monolith), `/apps/worker` (active queue consumer), `/apps/console` (onboarding/risk shell)
 - Frontend: Angular console skeleton
-- Database migrations: `V1__platform_bootstrap.sql`, `V2__tenant_scoped_events.sql`, `V3__account_scores.sql`, `V4__accepted_event_outbox.sql`, `V5__browser_sessions.sql`, `V6__tenant_memberships.sql`
+- Database migrations: `V1__platform_bootstrap.sql`, `V2__tenant_scoped_events.sql`, `V3__account_scores.sql`, `V4__accepted_event_outbox.sql`, `V5__browser_sessions.sql`, `V6__tenant_memberships.sql`, `V7__account_score_history.sql`
 - CI: `.github/workflows/verify.yml` runs `./scripts/verify.sh`
 - Canonical verify command: `./scripts/verify.sh`
 
@@ -25,14 +27,22 @@ Last updated for PR-028R — console prediction list.
 
 | Area | State |
 | --- | --- |
-| Product docs | ADR-001, ADR-002, PRD, data classification, ADR template, threat model, events:batch, and cursor-paginated prediction-read OpenAPI exist |
-| Backend | `platform-service` with Actuator, JDBC, Flyway, PostgreSQL Spring Session, browser CSRF, conditional provider-neutral OIDC login, enabled-membership resolution, API-key/session TenantContext, tenant-scoped event persistence, transactional outbox delivery to SQS, shared `RULES_BASELINE` scores, and cursor-paginated prediction reads; `worker` retains valid messages until their persisted event can be scored and permanently rejects invalid tenant tags |
-| Tests | platform-service context, health, PostgreSQL bootstrap, browser-session cookie/persistence/CSRF, OIDC Authorization Code/state/nonce/PKCE contract, OIDC membership mapping and failure, membership resolution and deny-by-default routes, tenant-isolation, event-batch, persistence, transactional-outbox enqueue, rules-score, prediction-read, and prediction-cursor; shared rules-scoring unit tests; worker context-load, consume, bounded DLQ redrive, successful-delete, and rescore tests; console onboarding/risk contract tests |
-| Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, V3 `account_scores`, V4 `accepted_event_outbox`, V5 Spring Session tables, and V6 tenants/users/memberships; worker uses the same PostgreSQL store without owning Flyway |
+| Product docs | ADR-001, ADR-002, PRD, data classification, ADR template, threat model, events:batch, and cursor-paginated current/history prediction-read OpenAPI exist |
+| Backend | `platform-service` with Actuator, JDBC, Flyway, PostgreSQL Spring Session, browser CSRF, conditional provider-neutral OIDC login, enabled-membership resolution, API-key/session TenantContext, tenant-scoped event persistence, transactional outbox delivery to SQS, shared `RULES_BASELINE` current/history scores, and cursor-paginated prediction reads; `worker` retains valid messages until their persisted event can be scored and permanently rejects invalid tenant tags |
+| Tests | platform-service context, health, PostgreSQL bootstrap, browser-session cookie/persistence/CSRF, OIDC Authorization Code/state/nonce/PKCE contract, OIDC membership mapping and failure, membership resolution and deny-by-default routes, tenant-isolation, event-batch, persistence, transactional-outbox enqueue, rules-score, prediction-read, prediction-cursor, and immutable tenant-history tests; shared rules-scoring unit tests; worker context-load, consume, bounded DLQ redrive, successful-delete, and rescore tests; console onboarding/risk contract tests |
+| Persistence | Flyway V1 bootstrap, V2 `ingested_events` / `ingest_receipts`, V3 `account_scores`, V4 `accepted_event_outbox`, V5 Spring Session tables, V6 tenants/users/memberships, and V7 append-only `account_score_history`; worker uses the same PostgreSQL store without owning Flyway |
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
 | Angular console | onboarding and risk routes; the risk route reads the first 50 current predictions through the same-origin session and renders loading, empty, safe error, retry, and semantic-table states; no login UI yet; API keys and OAuth tokens are forbidden from browser storage by ADR-002 |
+
+## What PR-029R added
+
+- Flyway V7 backfills current scores and appends every later `account_scores` insert/update to tenant-owned history, including writes from the platform and worker
+- PostgreSQL rejects history updates, deletes, and truncation so recorded score revisions are append-only
+- `GET /v1/accounts/{account_external_id}/prediction-history` returns newest-first pages with a bounded opaque cursor and derives tenant scope only from verified `TenantContext`
+- Cross-tenant guessed account IDs return 404; invalid limits/cursors return Problem Details; each cursor is a random identifier resolved only inside the verified tenant/account scope
+- Console history visualization, retention deletion, learned models, explanations, and infrastructure remain out of scope
 
 ## What PR-028R added
 

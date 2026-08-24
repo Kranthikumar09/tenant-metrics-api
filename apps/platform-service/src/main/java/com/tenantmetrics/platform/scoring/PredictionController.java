@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,6 +38,47 @@ class PredictionController {
 		return accountScoreStore.find(tenant.tenantId(), accountExternalId)
 				.<ResponseEntity<?>>map(score -> ResponseEntity.ok(toResponse(score)))
 				.orElseGet(() -> problem(HttpStatus.NOT_FOUND, "prediction not found"));
+	}
+
+	@GetMapping("/v1/accounts/{accountExternalId}/prediction-history")
+	ResponseEntity<?> listPredictionHistory(
+			@PathVariable String accountExternalId,
+			@RequestParam(name = "limit", required = false) Integer limit,
+			@RequestParam(name = "cursor", required = false) String cursor,
+			HttpServletRequest request) {
+		TenantContext tenant = requireTenant(request);
+		int pageSize = limit == null ? DEFAULT_PAGE_SIZE : limit;
+		if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+			return problem(HttpStatus.BAD_REQUEST, "limit must be between 1 and 500");
+		}
+		UUID historyCursor;
+		try {
+			historyCursor = decodeHistoryCursor(cursor);
+		}
+		catch (IllegalArgumentException ex) {
+			return problem(HttpStatus.BAD_REQUEST, "cursor is invalid");
+		}
+		if (accountScoreStore.find(tenant.tenantId(), accountExternalId).isEmpty()) {
+			return problem(HttpStatus.NOT_FOUND, "prediction history not found");
+		}
+		Long beforeHistoryId = null;
+		if (historyCursor != null) {
+			beforeHistoryId = accountScoreStore.resolveHistoryCursor(
+					tenant.tenantId(), accountExternalId, historyCursor).orElse(null);
+			if (beforeHistoryId == null) {
+				return problem(HttpStatus.BAD_REQUEST, "cursor is invalid");
+			}
+		}
+		List<HistoricalScore> rows = accountScoreStore.listHistory(
+				tenant.tenantId(), accountExternalId, beforeHistoryId, pageSize + 1);
+		boolean hasMore = rows.size() > pageSize;
+		if (hasMore) {
+			rows = List.copyOf(rows.subList(0, pageSize));
+		}
+		String nextCursor = hasMore ? encodeHistoryCursor(rows.getLast().cursorId()) : null;
+		return ResponseEntity.ok(new PredictionListResponse(
+				rows.stream().map(HistoricalScore::score).map(PredictionController::toResponse).toList(),
+				nextCursor));
 	}
 
 	static final int DEFAULT_PAGE_SIZE = 50;
@@ -89,6 +131,30 @@ class PredictionController {
 				throw new IllegalArgumentException("cursor");
 			}
 			return decoded;
+		}
+		catch (IllegalArgumentException ex) {
+			throw new IllegalArgumentException("cursor");
+		}
+	}
+
+	private static String encodeHistoryCursor(UUID cursorId) {
+		return Base64.getUrlEncoder().withoutPadding()
+				.encodeToString(cursorId.toString().getBytes(StandardCharsets.UTF_8));
+	}
+
+	private static UUID decodeHistoryCursor(String cursor) {
+		if (cursor == null || cursor.isBlank()) {
+			return null;
+		}
+		try {
+			byte[] bytes = Base64.getUrlDecoder().decode(cursor);
+			String decoded = new String(bytes, StandardCharsets.UTF_8);
+			UUID cursorId = UUID.fromString(decoded);
+			if (!Arrays.equals(bytes, decoded.getBytes(StandardCharsets.UTF_8))
+					|| !cursorId.toString().equals(decoded)) {
+				throw new IllegalArgumentException("cursor");
+			}
+			return cursorId;
 		}
 		catch (IllegalArgumentException ex) {
 			throw new IllegalArgumentException("cursor");

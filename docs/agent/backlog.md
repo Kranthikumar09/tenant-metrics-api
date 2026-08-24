@@ -4,17 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-029R — Score history**
+**PR-030R — Console shows account score history**
 
 - Capacity: S
-- Why next: the current prediction snapshot is now customer-visible; retaining immutable score versions is the smallest backend slice that makes risk changes auditable before the console visualizes them
-- Main dependency: PR-028R
-- In scope: PostgreSQL score-history migration and tenant-scoped persistence/read contract with fail-closed isolation tests
-- Out of scope: console charting, learned-model training, customer-facing explanations, retention automation, production deployment, Redis, MongoDB
+- Why next: immutable tenant-scoped history and its API now exist; the next customer-visible slice is selecting an account from the risk table and seeing how its score changed
+- Main dependency: PR-029R
+- In scope: Angular account-history route/client, first history page through the same-origin session, loading/empty/error states, and an accessible score timeline or table
+- Out of scope: history pagination controls, current prediction-list pagination, learned-model training, customer-facing explanations, retention automation, production deployment, Redis, MongoDB
 
 ## Later candidates
 
-No later candidate is committed. Split console history visualization from PR-029R after its API contract is proven.
+**PR-031R — Paginate the current prediction list** remains a later S-sized candidate after the history route.
 
 ## Completed
 
@@ -51,7 +51,8 @@ No later candidate is committed. Split console history visualization from PR-029
 | PR-025R | Add the PostgreSQL-backed browser session and CSRF foundation | implemented |
 | PR-026R | Add server-side tenant membership resolution | implemented |
 | PR-027R | Add a provider-neutral OIDC login adapter | implemented |
-| PR-028R | Console lists current predictions | implemented in this branch |
+| PR-028R | Console lists current predictions | implemented |
+| PR-029R | Add immutable tenant score history | implemented in this branch |
 
 ## Intentionally not scheduled
 

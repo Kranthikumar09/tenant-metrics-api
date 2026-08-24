@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -82,6 +83,53 @@ class AccountScoreStore {
 				limit);
 	}
 
+	List<HistoricalScore> listHistory(String tenantId, String accountExternalId, Long beforeHistoryId, int limit) {
+		if (beforeHistoryId == null) {
+			return jdbcTemplate.query(
+					"""
+							SELECT history_id, cursor_id, tenant_id, account_external_id, eligibility, health_score, risk_band,
+								risk_probability, score_version, feature_version, drivers, scored_at, freshness_seconds
+							FROM account_score_history
+							WHERE tenant_id = ? AND account_external_id = ?
+							ORDER BY history_id DESC
+							LIMIT ?
+							""",
+					this::mapHistoricalScore,
+					tenantId,
+					accountExternalId,
+					limit);
+		}
+		return jdbcTemplate.query(
+				"""
+						SELECT history_id, cursor_id, tenant_id, account_external_id, eligibility, health_score, risk_band,
+							risk_probability, score_version, feature_version, drivers, scored_at, freshness_seconds
+						FROM account_score_history
+						WHERE tenant_id = ? AND account_external_id = ? AND history_id < ?
+						ORDER BY history_id DESC
+						LIMIT ?
+						""",
+				this::mapHistoricalScore,
+				tenantId,
+				accountExternalId,
+				beforeHistoryId,
+				limit);
+	}
+
+	Optional<Long> resolveHistoryCursor(String tenantId, String accountExternalId, UUID cursorId) {
+		return jdbcTemplate.query(
+				"""
+						SELECT history_id
+						FROM account_score_history
+						WHERE tenant_id = ? AND account_external_id = ? AND cursor_id = ?
+						""",
+				(rs, rowNum) -> rs.getLong("history_id"),
+				tenantId,
+				accountExternalId,
+				cursorId)
+				.stream()
+				.findFirst();
+	}
+
 	void upsert(AccountScore score) {
 		jdbcTemplate.update(
 				"""
@@ -127,4 +175,14 @@ class AccountScoreStore {
 				rs.getTimestamp("scored_at").toInstant(),
 				rs.getObject("freshness_seconds", Integer.class));
 	}
+
+	private HistoricalScore mapHistoricalScore(ResultSet rs, int rowNum) throws SQLException {
+		return new HistoricalScore(
+				rs.getLong("history_id"),
+				rs.getObject("cursor_id", UUID.class),
+				mapScore(rs, rowNum));
+	}
+}
+
+record HistoricalScore(long historyId, UUID cursorId, AccountScore score) {
 }
