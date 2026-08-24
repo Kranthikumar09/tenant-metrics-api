@@ -43,10 +43,9 @@ ADR-001 is the approved architecture contract. Read `docs/architecture/ADRs/ADR-
 
 - Target layout is `/apps/platform-service`, `/apps/worker`, and `/apps/console`.
 - `/apps/worker` is a same-version background process, not an independently extracted microservice.
-- Existing `api-gateway`, `core-service`, and `common-models` are frozen legacy modules.
-- New implementation must not build on the frozen modules.
-- New modules must not introduce MongoDB or Redis.
-- MongoDB and Redis removal from legacy modules requires separate approval.
+- The retired `api-gateway`, `core-service`, and `common-models` scaffold must not be recreated.
+- Implementation must remain within the approved `apps/` and `libs/` layout.
+- Modules must not introduce MongoDB or Redis.
 - Work must proceed through small PRs with approval between PRs.
 
 ## Cost-optimized MVP

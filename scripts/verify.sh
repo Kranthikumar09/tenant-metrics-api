@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Canonical verification for the approved platform-service path.
-# Does not run frozen legacy module tests, including the pre-existing
-# core-service context-load failure.
+# Canonical verification for the approved application layout.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -9,6 +7,9 @@ cd "${ROOT}"
 
 echo "==> Agent and architecture docs"
 ./scripts/check-agent-docs.sh
+
+echo "==> approved Maven reactor"
+./mvnw -ntp -DskipTests validate
 
 echo "==> rules-scoring tests"
 ./mvnw -ntp -pl libs/rules-scoring test
