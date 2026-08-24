@@ -4,17 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-039R — Enforce a bounded JSON body for event ingestion**
+**PR-040R — Lock the tenant account-upsert API contract**
 
-- Capacity: S
-- Why next: `POST /v1/events:batch` bounds event count but not JSON bytes; the OpenAPI contract already promises 413 and threat T-04 remains open to oversized or chunked request-body exhaustion
-- Main dependency: PR-011 and the existing event-batch contract
-- In scope: a configurable event-ingestion byte limit with a conservative documented default, rejection of both declared-oversize and streamed/chunked oversize bodies with tenant-safe 413 Problem Details, focused boundary tests, and alignment of the OpenAPI description
-- Out of scope: rate limiting, decompression handling, limits on unrelated endpoints, account upsert, schema-property allowlists, infrastructure/WAF changes, billing, Redis, or MongoDB
+- Capacity: XS
+- Why next: account upsert is a named v1 and activation requirement, but the repository does not define its endpoint, minimal mutable fields, idempotency semantics, or tenant-safe error contract; implementing persistence first would invent product behavior
+- Main dependency: the PRD account-upsert traceability row, existing TenantContext rules, and the versioned OpenAPI contract
+- In scope: lock one minimal account-upsert endpoint and schema in OpenAPI, define create/update/idempotency and tenant-isolation semantics, add contract guardrails, and update repository memory
+- Out of scope: Java implementation, Flyway migration, console onboarding workflow, bulk import, deletion/retention, arbitrary metadata, billing, webhooks, Redis, MongoDB, or new infrastructure
 
 ## Later candidates
 
-Select the next candidate after PR-039R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
+Select the next candidate after PR-040R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
 
 ## Completed
 
@@ -61,7 +61,8 @@ Select the next candidate after PR-039R using the product contract and remaining
 | PR-035R | Enforce the absolute browser-session lifetime | implemented |
 | PR-036R | Add CSRF-protected browser logout | implemented |
 | PR-037R | Revoke browser sessions when membership access is disabled | implemented |
-| PR-038R | Add the Angular browser logout control | implemented in this branch |
+| PR-038R | Add the Angular browser logout control | implemented |
+| PR-039R | Enforce a bounded JSON body for event ingestion | implemented in this branch |
 
 ## Intentionally not scheduled
 
