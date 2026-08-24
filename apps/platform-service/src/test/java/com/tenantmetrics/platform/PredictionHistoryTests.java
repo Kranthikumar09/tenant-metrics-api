@@ -81,7 +81,7 @@ class PredictionHistoryTests extends AbstractPlatformPostgresTest {
 		String firstBody = firstResult.getResponse().getContentAsString();
 		String cursor = JsonPath.read(firstBody, "$.next_cursor");
 		String decodedCursor = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
-		assertThat(decodedCursor).matches("[1-9][0-9]*");
+		assertThat(decodedCursor).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 		assertThat(decodedCursor).doesNotContain("tenant", "acct-hist-page");
 
 		MvcResult secondResult = mockMvc.perform(get("/v1/accounts/acct-hist-page/prediction-history")
@@ -102,15 +102,26 @@ class PredictionHistoryTests extends AbstractPlatformPostgresTest {
 	@Test
 	void sameAccountHistoryIsIsolatedByVerifiedTenant() throws Exception {
 		ingest(TENANT_A_KEY, "idem-hist-tenant-a", "evt-hist-tenant-a", "acct-hist-shared", "billing.payment_failed");
+		ingest(TENANT_A_KEY, "idem-hist-tenant-a-2", "evt-hist-tenant-a-2", "acct-hist-shared", "auth.login");
 		ingest(TENANT_B_KEY, "idem-hist-tenant-b", "evt-hist-tenant-b", "acct-hist-shared", "auth.login");
 
-		mockMvc.perform(get("/v1/accounts/acct-hist-shared/prediction-history")
+		MvcResult tenantAResult = mockMvc.perform(get("/v1/accounts/acct-hist-shared/prediction-history")
+						.param("limit", "1")
 						.header("X-Api-Key", TENANT_A_KEY)
 						.header("X-Tenant-ID", "tenant-b"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items.length()").value(1))
-				.andExpect(jsonPath("$.items[0].health_score").value(45))
-				.andExpect(jsonPath("$.items[0].tenant_id").doesNotExist());
+				.andExpect(jsonPath("$.items[0].health_score").value(65))
+				.andExpect(jsonPath("$.items[0].tenant_id").doesNotExist())
+				.andExpect(jsonPath("$.next_cursor").isNotEmpty())
+				.andReturn();
+		String tenantACursor = JsonPath.read(tenantAResult.getResponse().getContentAsString(), "$.next_cursor");
+
+		mockMvc.perform(get("/v1/accounts/acct-hist-shared/prediction-history")
+						.param("cursor", tenantACursor)
+						.header("X-Api-Key", TENANT_B_KEY))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400));
 
 		mockMvc.perform(get("/v1/accounts/acct-hist-shared/prediction-history")
 						.header("X-Api-Key", TENANT_B_KEY))
