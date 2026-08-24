@@ -4,17 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-030R — Console shows account score history**
+**PR-031R — Paginate the current prediction list**
 
 - Capacity: S
-- Why next: immutable tenant-scoped history and its API now exist; the next customer-visible slice is selecting an account from the risk table and seeing how its score changed
-- Main dependency: PR-029R
-- In scope: Angular account-history route/client, first history page through the same-origin session, loading/empty/error states, and an accessible score timeline or table
-- Out of scope: history pagination controls, current prediction-list pagination, learned-model training, customer-facing explanations, retention automation, production deployment, Redis, MongoDB
+- Why next: the console currently stops at the first 50 current predictions even though the tenant-safe backend cursor already exists; a bounded Load more interaction makes larger tenant portfolios usable
+- Main dependency: PR-028R
+- In scope: retain `next_cursor`, request later current-prediction pages through the same-origin session, append non-duplicate accounts, and expose accessible loading/end/error states for a Load more control
+- Out of scope: history pagination controls, backend API changes, infinite scrolling, filtering/sorting, learned-model training, customer-facing explanations, production deployment, Redis, MongoDB
 
 ## Later candidates
 
-**PR-031R — Paginate the current prediction list** remains a later S-sized candidate after the history route.
+**PR-032R — Paginate account score history** is a later S-sized candidate after current-list pagination.
 
 ## Completed
 
@@ -52,7 +52,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-026R | Add server-side tenant membership resolution | implemented |
 | PR-027R | Add a provider-neutral OIDC login adapter | implemented |
 | PR-028R | Console lists current predictions | implemented |
-| PR-029R | Add immutable tenant score history | implemented in this branch |
+| PR-029R | Add immutable tenant score history | implemented |
+| PR-030R | Console shows account score history | implemented in this branch |
 
 ## Intentionally not scheduled
 

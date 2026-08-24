@@ -1,0 +1,47 @@
+<section>
+	<header>
+		<a routerLink="/risk">← Back to current account risk</a>
+		<p>Account score history</p>
+		<h1>{{ accountExternalId }}</h1>
+		<p>Newest-first RULES_BASELINE revisions from your secure browser session.</p>
+	</header>
+
+	@if (state().status === 'loading') {
+		<p role="status" aria-live="polite">Loading score history…</p>
+	} @else if (state().status === 'empty') {
+		<div role="status">
+			<h2>No score history yet</h2>
+			<p>This account has no recorded score revisions.</p>
+		</div>
+	} @else if (state().status === 'error') {
+		<div role="alert">
+			<h2>We could not load score history</h2>
+			<p>{{ errorMessage() }}</p>
+			<button type="button" (click)="retry()">Try again</button>
+		</div>
+	} @else {
+		<table>
+			<caption>Newest-first account score history</caption>
+			<thead>
+				<tr>
+					<th scope="col">Scored</th>
+					<th scope="col">Health score</th>
+					<th scope="col">Risk band</th>
+					<th scope="col">Eligibility</th>
+					<th scope="col">Score version</th>
+				</tr>
+			</thead>
+			<tbody>
+				@for (prediction of items(); track $index) {
+					<tr>
+						<td>{{ prediction.scored_at | date: 'medium' }}</td>
+						<td>{{ prediction.health_score ?? '—' }}</td>
+						<td>{{ prediction.risk_band ?? 'Not available' }}</td>
+						<td>{{ prediction.eligibility }}</td>
+						<td>{{ prediction.score_version }}</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+</section>

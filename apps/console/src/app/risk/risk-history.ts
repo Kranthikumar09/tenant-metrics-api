@@ -1,20 +1,25 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import {
 	PredictionClient,
 	PredictionViewState,
-	loadPredictionState,
+	loadPredictionHistoryState,
 } from './prediction-client';
 
 @Component({
-	selector: 'app-risk',
+	selector: 'app-risk-history',
 	imports: [DatePipe, RouterLink],
-	templateUrl: './risk.html',
+	templateUrl: './risk-history.html',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RiskPage implements OnInit {
+export class RiskHistoryPage implements OnInit {
+	private readonly route = inject(ActivatedRoute);
+	private readonly predictions = new PredictionClient();
+
+	protected readonly accountExternalId =
+		this.route.snapshot.paramMap.get('accountExternalId') ?? '';
 	readonly state = signal<PredictionViewState>({ status: 'loading' });
 	protected readonly items = computed(() => {
 		const state = this.state();
@@ -24,8 +29,6 @@ export class RiskPage implements OnInit {
 		const state = this.state();
 		return state.status === 'error' ? state.message : '';
 	});
-
-	private readonly predictions = new PredictionClient();
 
 	ngOnInit(): void {
 		void this.load();
@@ -37,6 +40,9 @@ export class RiskPage implements OnInit {
 
 	private async load(): Promise<void> {
 		this.state.set({ status: 'loading' });
-		this.state.set(await loadPredictionState(this.predictions));
+		this.state.set(await loadPredictionHistoryState(
+			this.predictions,
+			this.accountExternalId,
+		));
 	}
 }

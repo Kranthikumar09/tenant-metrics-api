@@ -27,6 +27,10 @@ export interface PredictionSource {
 	listCurrent(): Promise<PredictionListResponse>;
 }
 
+export interface PredictionHistorySource {
+	listHistory(accountExternalId: string): Promise<PredictionListResponse>;
+}
+
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
 export class PredictionRequestError extends Error {
@@ -39,7 +43,7 @@ export class PredictionRequestError extends Error {
 	}
 }
 
-export class PredictionClient implements PredictionSource {
+export class PredictionClient implements PredictionSource, PredictionHistorySource {
 	private readonly fetcher: FetchLike;
 
 	constructor(fetcher: FetchLike = (url, init) => globalThis.fetch(url, init)) {
@@ -47,7 +51,19 @@ export class PredictionClient implements PredictionSource {
 	}
 
 	async listCurrent(): Promise<PredictionListResponse> {
-		const response = await this.fetcher('/v1/predictions?limit=50', {
+		return this.list('/v1/predictions?limit=50');
+	}
+
+	async listHistory(accountExternalId: string): Promise<PredictionListResponse> {
+		if (accountExternalId.length === 0) {
+			throw new PredictionRequestError(400);
+		}
+		const accountPath = encodeURIComponent(accountExternalId);
+		return this.list(`/v1/accounts/${accountPath}/prediction-history?limit=50`);
+	}
+
+	private async list(url: string): Promise<PredictionListResponse> {
+		const response = await this.fetcher(url, {
 			method: 'GET',
 			credentials: 'same-origin',
 			cache: 'no-store',
@@ -72,8 +88,31 @@ export class PredictionClient implements PredictionSource {
 }
 
 export async function loadPredictionState(source: PredictionSource): Promise<PredictionViewState> {
+	return loadState(
+		() => source.listCurrent(),
+		'Your session has expired. Sign in again to view account risk.',
+		'Predictions are temporarily unavailable. Please try again.',
+	);
+}
+
+export async function loadPredictionHistoryState(
+	source: PredictionHistorySource,
+	accountExternalId: string,
+): Promise<PredictionViewState> {
+	return loadState(
+		() => source.listHistory(accountExternalId),
+		'Your session has expired. Sign in again to view score history.',
+		'Score history is temporarily unavailable. Please try again.',
+	);
+}
+
+async function loadState(
+	request: () => Promise<PredictionListResponse>,
+	unauthorizedMessage: string,
+	unavailableMessage: string,
+): Promise<PredictionViewState> {
 	try {
-		const response = await source.listCurrent();
+		const response = await request();
 		return response.items.length === 0
 			? { status: 'empty' }
 			: { status: 'ready', items: response.items };
@@ -82,12 +121,12 @@ export async function loadPredictionState(source: PredictionSource): Promise<Pre
 		if (error instanceof PredictionRequestError && error.status === 401) {
 			return {
 				status: 'error',
-				message: 'Your session has expired. Sign in again to view account risk.',
+				message: unauthorizedMessage,
 			};
 		}
 		return {
 			status: 'error',
-			message: 'Predictions are temporarily unavailable. Please try again.',
+			message: unavailableMessage,
 		};
 	}
 }

@@ -33,7 +33,11 @@
 			<tbody>
 				@for (prediction of items(); track prediction.account_external_id) {
 					<tr>
-						<td>{{ prediction.account_external_id }}</td>
+						<td>
+							<a [routerLink]="['/risk', prediction.account_external_id, 'history']">
+								{{ prediction.account_external_id }}
+							</a>
+						</td>
 						<td>{{ prediction.health_score ?? '—' }}</td>
 						<td>{{ prediction.risk_band ?? 'Not available' }}</td>
 						<td>{{ prediction.eligibility }}</td>
