@@ -2,12 +2,56 @@ openapi: 3.1.0
 info:
   title: Churn Intelligence API
   version: 0.1.0
-  description: Versioned contract. This revision defines POST /v1/events:batch and cursor-paginated tenant-scoped current and historical prediction reads.
+  description: Versioned contract. This revision defines tenant-scoped account upsert, bounded event ingestion, and cursor-paginated current and historical prediction reads.
 servers:
   - url: /
 security:
   - ApiKeyAuth: []
 paths:
+  /v1/accounts:upsert:
+    post:
+      operationId: upsertAccount
+      summary: Create or return a tenant-owned scored account
+      description: |
+        Create the account identified by account_external_id, or return the existing
+        account in the verified tenant. No tenant field is accepted from the request;
+        tenant authority comes only from the verified credential context.
+
+        account_external_id is the domain idempotency key.
+        Retries for the same verified tenant and account_external_id have one account effect. The first successful call
+        returns 201; later retries return 200 and never create another account. The same
+        account_external_id may independently exist in another verified tenant.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpsertRequest'
+            examples:
+              sample:
+                value:
+                  account_external_id: acct-1
+      responses:
+        '200':
+          description: Existing account returned without creating a duplicate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountUpsertResponse'
+        '201':
+          description: Account created for the verified tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountUpsertResponse'
+        '400':
+          description: Missing, malformed, or unsupported request fields
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Missing or unknown credential
   /v1/events:batch:
     post:
       operationId: ingestEventBatch
@@ -171,6 +215,25 @@ components:
       in: header
       name: X-Api-Key
   schemas:
+    AccountUpsertRequest:
+      type: object
+      additionalProperties: false
+      required: [account_external_id]
+      properties:
+        account_external_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Tenant-owned stable identifier supplied by the customer.
+    AccountUpsertResponse:
+      type: object
+      additionalProperties: false
+      required: [account_external_id]
+      properties:
+        account_external_id:
+          type: string
+          minLength: 1
+          maxLength: 128
     EventBatchRequest:
       type: object
       additionalProperties: false
