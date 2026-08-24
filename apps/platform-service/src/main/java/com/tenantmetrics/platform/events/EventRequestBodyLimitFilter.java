@@ -71,7 +71,7 @@ public final class EventRequestBodyLimitFilter extends OncePerRequestFilter {
 
 		private BufferedBodyRequest(HttpServletRequest request, byte[] body) {
 			super(request);
-			this.body = body.clone();
+			this.body = body;
 		}
 
 		@Override
