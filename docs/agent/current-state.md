@@ -1,14 +1,14 @@
 # Current state
 
-Last updated for PR-030R — console account score history.
+Last updated for PR-031R — current-risk console pagination.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, a provider-neutral OIDC Authorization Code login adapter with S256 PKCE, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Validated OIDC issuer and subject resolve to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed, and tenant claims remain non-authoritative. The adapter activates only when an OIDC client registration exists; no production provider or credentials are configured. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell whose risk route lists the first 50 current predictions and links each account to its newest-first score-history page through the same-origin opaque server session. Both views provide loading, empty, safe error, retry, and populated states. The console has no client tenant switch and never reads or stores API keys, bearer/OIDC tokens, tenant headers, or the HttpOnly session cookie. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, a provider-neutral OIDC Authorization Code login adapter with S256 PKCE, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Validated OIDC issuer and subject resolve to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed, and tenant claims remain non-authoritative. The adapter activates only when an OIDC client registration exists; no production provider or credentials are configured. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell whose current-risk route follows the backend cursor through an explicit Load more interaction and links each account to its first newest-first score-history page through the same-origin opaque server session. Both views provide loading, empty, safe error, retry, and populated states. The console has no client tenant switch and never reads or stores API keys, bearer/OIDC tokens, tenant headers, or the HttpOnly session cookie. Pagination cursors remain only in in-memory view state. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
 Flyway V7 now retains every current-score insert/update as an append-only tenant-owned revision. The platform exposes newest-first cursor pages at `GET /v1/accounts/{account_external_id}/prediction-history`; the cursor carries no tenant or account authority.
 
-- Branch: `cursor/pr-030r-console-score-history-9d98`
+- Branch: `cursor/pr-031r-paginate-current-risk-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Browser session decision: `docs/architecture/ADRs/ADR-002-console-browser-session.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
@@ -18,7 +18,7 @@ Flyway V7 now retains every current-score insert/update as an append-only tenant
 - Build: Maven wrapper, Spring Boot 4.1.1 parent, Spring Cloud 2025.1.2 BOM
 - Frozen legacy modules: `common-models`, `core-service`, `api-gateway`
 - Target modules: `/apps/platform-service` (active modular monolith), `/apps/worker` (active queue consumer), `/apps/console` (onboarding/current-risk/history shell)
-- Frontend: Angular console with current-risk and account-history reads
+- Frontend: Angular console with cursor-paginated current-risk and first-page account-history reads
 - Database migrations: `V1__platform_bootstrap.sql`, `V2__tenant_scoped_events.sql`, `V3__account_scores.sql`, `V4__accepted_event_outbox.sql`, `V5__browser_sessions.sql`, `V6__tenant_memberships.sql`, `V7__account_score_history.sql`
 - CI: `.github/workflows/verify.yml` runs `./scripts/verify.sh`
 - Canonical verify command: `./scripts/verify.sh`
@@ -34,14 +34,21 @@ Flyway V7 now retains every current-score insert/update as an append-only tenant
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
-| Angular console | onboarding, current-risk, and account-history routes; account links request the first 50 newest-first history revisions through the same-origin session and both risk views render loading, empty, safe error, retry, and semantic-table states; no pagination controls or login UI yet; API keys and OAuth tokens are forbidden from browser storage by ADR-002 |
+| Angular console | onboarding, current-risk, and account-history routes; the current list uses an explicit cursor-backed Load more control with loading, completion, and safe retry states, while account history remains first-page only; both views use the same-origin session and semantic tables; no login UI yet; API keys and OAuth tokens are forbidden from browser storage by ADR-002 |
+
+## What PR-031R added
+
+- The current-risk client accepts an optional opaque cursor, encodes it into later `/v1/predictions?limit=50` requests, and keeps it only in in-memory view state
+- An accessible Load more control appends later pages, suppresses duplicate account rows, disables concurrent loads, and reports loading, completion, and safe retry states
+- Later-page failures preserve already rendered predictions and the retry cursor; a 401 receives a session-safe message and other failures hide backend details
+- Account-history pagination, filtering, sorting, infinite scrolling, backend changes, and infrastructure remain out of scope
 
 ## What PR-030R added
 
 - Each account in the current-risk table links to `/risk/:accountExternalId/history`
 - The history view requests the first 50 revisions from the existing API with same-origin credentials, an encoded account path, runtime response validation, and no browser tenant authority or authentication secrets
 - Loading, empty, safe 401/generic error, retry, and accessible newest-first table states cover the first customer-visible history slice
-- Current-list pagination, history pagination controls, login UI, score explanations, retention automation, and backend changes remain out of scope
+- History pagination controls, login UI, score explanations, retention automation, and backend changes remain out of scope
 
 ## What PR-029R added
 
