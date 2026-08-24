@@ -82,6 +82,38 @@ class AccountScoreStore {
 				limit);
 	}
 
+	List<HistoricalScore> listHistory(String tenantId, String accountExternalId, Long beforeHistoryId, int limit) {
+		if (beforeHistoryId == null) {
+			return jdbcTemplate.query(
+					"""
+							SELECT history_id, tenant_id, account_external_id, eligibility, health_score, risk_band,
+								risk_probability, score_version, feature_version, drivers, scored_at, freshness_seconds
+							FROM account_score_history
+							WHERE tenant_id = ? AND account_external_id = ?
+							ORDER BY history_id DESC
+							LIMIT ?
+							""",
+					this::mapHistoricalScore,
+					tenantId,
+					accountExternalId,
+					limit);
+		}
+		return jdbcTemplate.query(
+				"""
+						SELECT history_id, tenant_id, account_external_id, eligibility, health_score, risk_band,
+							risk_probability, score_version, feature_version, drivers, scored_at, freshness_seconds
+						FROM account_score_history
+						WHERE tenant_id = ? AND account_external_id = ? AND history_id < ?
+						ORDER BY history_id DESC
+						LIMIT ?
+						""",
+				this::mapHistoricalScore,
+				tenantId,
+				accountExternalId,
+				beforeHistoryId,
+				limit);
+	}
+
 	void upsert(AccountScore score) {
 		jdbcTemplate.update(
 				"""
@@ -127,4 +159,11 @@ class AccountScoreStore {
 				rs.getTimestamp("scored_at").toInstant(),
 				rs.getObject("freshness_seconds", Integer.class));
 	}
+
+	private HistoricalScore mapHistoricalScore(ResultSet rs, int rowNum) throws SQLException {
+		return new HistoricalScore(rs.getLong("history_id"), mapScore(rs, rowNum));
+	}
+}
+
+record HistoricalScore(long historyId, AccountScore score) {
 }
