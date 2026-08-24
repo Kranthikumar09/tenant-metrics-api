@@ -1,12 +1,12 @@
 # Current state
 
-Last updated after PR-027R — provider-neutral OIDC login adapter.
+Last updated for PR-028R — console prediction list.
 
 ## Snapshot
 
-`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, a provider-neutral OIDC Authorization Code login adapter with S256 PKCE, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Validated OIDC issuer and subject resolve to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed, and tenant claims remain non-authoritative. The adapter activates only when an OIDC client registration exists; no production provider or credentials are configured. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell with no client tenant switch. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
+`/apps/platform-service` is a Java 21 Spring Boot 4.1.1 modular monolith with JDBC, Flyway, hashed-key TenantContext, PostgreSQL-backed Spring sessions, browser CSRF protection, a provider-neutral OIDC Authorization Code login adapter with S256 PKCE, server-side tenant membership resolution, tenant-scoped event persistence, a PostgreSQL transactional outbox for LocalStack SQS delivery, `RULES_BASELINE` scores, and cursor-paginated prediction reads. Validated OIDC issuer and subject resolve to one enabled PostgreSQL membership; missing, disabled, or ambiguous membership fails closed, and tenant claims remain non-authoritative. The adapter activates only when an OIDC client registration exists; no production provider or credentials are configured. `/apps/worker` is a same-version non-web process that consumes tenant-tagged SQS messages, permanently rejects missing or mismatched tenant tags, and deletes a valid message only after its persisted event is visible and its tenant-scoped score refresh succeeds. Valid messages that cannot be completed are bounded by an SQS redrive policy and retain their tenant tag in `accepted-events-dlq`. Both call `/libs/rules-scoring` for the rules engine. `/apps/console` is an Angular onboarding and risk shell whose risk route lists the first 50 current predictions through the same-origin opaque server session with loading, empty, error, and populated states. It has no client tenant switch and never reads or stores API keys, bearer/OIDC tokens, tenant headers, or the HttpOnly session cookie. Neither module has MongoDB or Redis. Frozen legacy modules are unchanged. Local Compose starts PostgreSQL and LocalStack SQS/S3.
 
-- Branch: `cursor/pr-027r-oidc-login-adapter-9d98`
+- Branch: `cursor/pr-028r-console-predictions-9d98`
 - Architecture decision: `docs/architecture/ADRs/ADR-001-mvp-architecture.md` (Accepted)
 - Browser session decision: `docs/architecture/ADRs/ADR-002-console-browser-session.md` (Accepted)
 - Product contract: `docs/product/PRD.md`
@@ -32,7 +32,14 @@ Last updated after PR-027R — provider-neutral OIDC login adapter.
 | Local environment | `.cursor/install.sh` and `start.sh` still start PostgreSQL, Redis, and MongoDB |
 | Docker / Compose | `docker-compose.yml` starts PostgreSQL and LocalStack SQS/S3 |
 | CI | GitHub Actions runs `./scripts/verify.sh` with contents:read and no deploy credentials |
-| Angular console | onboarding and risk routes; no prediction fetch or login UI yet; API keys and OAuth tokens are forbidden from browser storage by ADR-002 |
+| Angular console | onboarding and risk routes; the risk route reads the first 50 current predictions through the same-origin session and renders loading, empty, safe error, retry, and semantic-table states; no login UI yet; API keys and OAuth tokens are forbidden from browser storage by ADR-002 |
+
+## What PR-028R added
+
+- The Angular risk route requests the first page of `/v1/predictions?limit=50` with same-origin credentials and no browser-readable authentication or tenant authority
+- Loading, empty, safe error, retry, and populated semantic-table states cover the customer-visible prediction-list slice
+- Runtime response validation rejects malformed prediction payloads instead of rendering untrusted shapes
+- Pagination controls, score history, login UI, production IdP configuration, and backend changes remain out of scope
 
 ## What PR-027R added
 
