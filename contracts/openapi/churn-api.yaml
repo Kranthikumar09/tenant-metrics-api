@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Churn Intelligence API
   version: 0.1.0
-  description: Versioned contract. This revision defines POST /v1/events:batch and cursor-paginated tenant-scoped prediction reads.
+  description: Versioned contract. This revision defines POST /v1/events:batch and cursor-paginated tenant-scoped current and historical prediction reads.
 servers:
   - url: /
 security:
@@ -75,6 +75,53 @@ paths:
           description: Missing or unknown API key
         '404':
           description: No score for this account in the caller's tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /v1/accounts/{account_external_id}/prediction-history:
+    get:
+      operationId: listAccountPredictionHistory
+      summary: List immutable score revisions for one account in the verified tenant
+      parameters:
+        - name: account_external_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque cursor from the previous history page. It never establishes tenant or account authority.
+      responses:
+        '200':
+          description: A newest-first page of immutable score revisions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionList'
+        '400':
+          description: Invalid limit or cursor
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Missing or unknown API key
+        '404':
+          description: No score history for this account in the caller's tenant
           content:
             application/problem+json:
               schema:
