@@ -4,17 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-036R — Add CSRF-protected browser logout**
+**PR-037R — Revoke browser sessions when membership access is disabled**
 
 - Capacity: S
-- Why next: ADR-002 requires CSRF-protected server-side logout, while the current security configuration still disables logout; this is the next smallest session-lifecycle gap after absolute expiry
-- Main dependency: PR-025R, PR-035R, and ADR-002
-- In scope: POST-only browser logout, CSRF enforcement, PostgreSQL session invalidation, session-cookie clearing, safe response behavior, and integration tests
-- Out of scope: Angular logout UI, identity-provider end-session calls, membership/account lifecycle revocation, production IdP configuration, machine API-key behavior, Redis, MongoDB, or new infrastructure
+- Why next: ADR-002 requires server-side invalidation after membership removal or account disablement, while an already active browser principal currently keeps its tenant authority until logout or timeout
+- Main dependency: PR-026R, PR-035R, PR-036R, and ADR-002
+- In scope: revalidate an authenticated browser principal against the exact enabled user, tenant, and membership before tenant API access; invalidate its PostgreSQL session and clear its cookie on revocation; return safe JSON 401; prove user, membership, and tenant disablement plus API-key isolation
+- Out of scope: admin mutation APIs, background bulk session deletion, Angular changes, identity-provider end-session calls, production IdP configuration, audit-sink implementation, Redis, MongoDB, or new infrastructure
 
 ## Later candidates
 
-Select the next candidate after PR-036R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
+Select the next candidate after PR-037R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
 
 ## Completed
 
@@ -58,7 +58,8 @@ Select the next candidate after PR-036R using the product contract and remaining
 | PR-032R | Paginate account score history | implemented |
 | PR-033R | Add the same-origin Angular development proxy | implemented |
 | PR-034R | Retire the legacy scaffold and align local tooling | implemented |
-| PR-035R | Enforce the absolute browser-session lifetime | implemented in this branch |
+| PR-035R | Enforce the absolute browser-session lifetime | implemented |
+| PR-036R | Add CSRF-protected browser logout | implemented in this branch |
 
 ## Intentionally not scheduled
 
