@@ -19,7 +19,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -148,47 +147,57 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 
 	@Test
 	void browserActivityCannotExtendTheEightHourAbsoluteLifetime() throws Exception {
-		MockHttpSession session = new MockHttpSession();
-		Instant createdAt = Instant.ofEpochMilli(session.getCreationTime());
+		int sessionsBefore = sessionCount();
+		PersistedSession session = createPersistedSession();
 
-		absoluteSessionClock.setInstant(createdAt.plus(Duration.ofHours(8)).minusSeconds(1));
+		absoluteSessionClock.setInstant(session.createdAt().plus(Duration.ofHours(8)).minusSeconds(1));
 		mockMvc.perform(get("/v1/tenant-context")
-					.session(session)
+					.cookie(session.cookie())
 					.with(tenantSession("user-a", "tenant-a")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.tenantId").value("tenant-a"));
 
-		absoluteSessionClock.setInstant(createdAt.plus(Duration.ofHours(8)));
+		absoluteSessionClock.setInstant(session.createdAt().plus(Duration.ofHours(8)));
 		mockMvc.perform(get("/v1/tenant-context")
-					.session(session)
+					.cookie(session.cookie())
 					.with(tenantSession("user-a", "tenant-a")))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
 				.andExpect(jsonPath("$.status").value(401))
 				.andExpect(result -> assertThat(result.getResponse().getRedirectedUrl()).isNull());
 
-		org.junit.jupiter.api.Assertions.assertThrows(
-				IllegalStateException.class, session::getCreationTime);
+		assertThat(sessionCount()).isEqualTo(sessionsBefore);
 	}
 
 	@Test
 	void expiredBrowserSessionDoesNotChangeApiKeyAuthentication() throws Exception {
-		MockHttpSession session = new MockHttpSession();
-		Instant createdAt = Instant.ofEpochMilli(session.getCreationTime());
-		absoluteSessionClock.setInstant(createdAt.plus(Duration.ofHours(8)));
+		int sessionsBefore = sessionCount();
+		PersistedSession session = createPersistedSession();
+		absoluteSessionClock.setInstant(session.createdAt().plus(Duration.ofHours(8)));
 
 		mockMvc.perform(get("/v1/tenant-context")
-					.session(session)
+					.cookie(session.cookie())
 					.header("X-Api-Key", "tenant-a-test-key"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.tenantId").value("tenant-a"));
 
-		org.junit.jupiter.api.Assertions.assertThrows(
-				IllegalStateException.class, session::getCreationTime);
+		assertThat(sessionCount()).isEqualTo(sessionsBefore);
 	}
 
 	private int sessionCount() {
 		return jdbcTemplate.queryForObject("select count(*) from spring_session", Integer.class);
+	}
+
+	private PersistedSession createPersistedSession() throws Exception {
+		MvcResult result = mockMvc.perform(get("/test/session-probe"))
+				.andExpect(status().isOk())
+				.andReturn();
+		return new PersistedSession(
+				requiredCookie(result, "__Host-tm_session"),
+				Instant.ofEpochMilli(Long.parseLong(result.getResponse().getContentAsString())));
+	}
+
+	private record PersistedSession(Cookie cookie, Instant createdAt) {
 	}
 
 	private static String cookieHeader(MvcResult result, String name) {
@@ -313,9 +322,9 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 	static class SessionProbeController {
 
 		@GetMapping("/test/session-probe")
-		String createSession(HttpSession session) {
+		long createSession(HttpSession session) {
 			session.setAttribute("probe", "persisted");
-			return "ok";
+			return session.getCreationTime();
 		}
 	}
 }
