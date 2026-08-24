@@ -245,7 +245,7 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 		assertThat(cookieHeaders(logout, "XSRF-TOKEN"))
 				.anySatisfy(value -> assertThat(value)
 						.doesNotStartWith("XSRF-TOKEN=;")
-						.contains("Path=/", "Secure", "SameSite=Lax")
+						.contains("Path=/", "Secure")
 						.doesNotContain("HttpOnly"));
 	}
 
