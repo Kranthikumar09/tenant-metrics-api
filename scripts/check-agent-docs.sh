@@ -217,6 +217,20 @@ require_heading "contracts/openapi/churn-api.yaml" "/v1/accounts/{account_extern
 require_heading "contracts/openapi/churn-api.yaml" "event_id"
 require_heading "contracts/openapi/churn-api.yaml" "Idempotency-Key"
 require_heading "contracts/openapi/churn-api.yaml" "500"
+
+# PR-040R account-upsert contract: one tenant-owned domain key gives retries
+# one account effect without accepting browser/client tenant authority.
+require_heading "contracts/openapi/churn-api.yaml" "/v1/accounts:upsert"
+require_heading "contracts/openapi/churn-api.yaml" "operationId: upsertAccount"
+require_heading "contracts/openapi/churn-api.yaml" "AccountUpsertRequest"
+require_heading "contracts/openapi/churn-api.yaml" "AccountUpsertResponse"
+require_heading "contracts/openapi/churn-api.yaml" "Account created for the verified tenant"
+require_heading "contracts/openapi/churn-api.yaml" "Existing account returned without creating a duplicate"
+require_heading "contracts/openapi/churn-api.yaml" "Retries for the same verified tenant and account_external_id have one account effect"
+require_heading "contracts/openapi/churn-api.yaml" "No tenant field is accepted from the request"
+forbid_text "contracts/openapi/churn-api.yaml" "X-Tenant-ID"
+forbid_text "contracts/openapi/churn-api.yaml" "tenant_id"
+
 require_file "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventBatchTests.java"
 require_heading "apps/platform-service/src/test/java/com/tenantmetrics/platform/EventBatchTests.java" "/v1/events:batch"
 
