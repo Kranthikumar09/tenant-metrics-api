@@ -7,6 +7,7 @@ import test from 'node:test';
 import {
 	PredictionClient,
 	PredictionRequestError,
+	loadNextPredictionState,
 	loadPredictionHistoryState,
 	loadPredictionState,
 } from './risk/prediction-client.ts';
@@ -108,6 +109,27 @@ test('prediction client uses only the same-origin browser session', async () => 
 	assert.equal(response.next_cursor, 'opaque-next-page');
 });
 
+test('prediction client encodes the opaque cursor for later current-risk pages', async () => {
+	let requestedUrl = '';
+	let requestedInit: RequestInit | undefined;
+	const client = new PredictionClient(async (url, init) => {
+		requestedUrl = url;
+		requestedInit = init;
+		return jsonResponse({ items: [prediction('acct-next')] });
+	});
+
+	await client.listCurrent('opaque+/=cursor');
+
+	assert.equal(requestedUrl, '/v1/predictions?limit=50&cursor=opaque%2B%2F%3Dcursor');
+	assert.deepEqual(requestedInit, {
+		method: 'GET',
+		credentials: 'same-origin',
+		cache: 'no-store',
+		headers: { Accept: 'application/json' },
+	});
+	assert.doesNotMatch(JSON.stringify(requestedInit), /X-Api-Key|Authorization|Bearer/i);
+});
+
 test('prediction-history client encodes the account path and uses only the same-origin session', async () => {
 	let requestedUrl = '';
 	let requestedInit: RequestInit | undefined;
@@ -164,17 +186,105 @@ test('prediction-history state exposes ready, empty, and safe error outcomes', a
 
 test('prediction state exposes ready and empty outcomes', async () => {
 	const ready = await loadPredictionState({
-		listCurrent: async () => ({ items: [prediction('acct-ready')] }),
+		listCurrent: async () => ({
+			items: [prediction('acct-ready')],
+			next_cursor: 'page-2',
+		}),
 	});
 	assert.equal(ready.status, 'ready');
 	if (ready.status === 'ready') {
 		assert.equal(ready.items[0]?.account_external_id, 'acct-ready');
+		assert.equal(ready.nextCursor, 'page-2');
+		assert.deepEqual(ready.pagination, { status: 'idle' });
 	}
 
 	const empty = await loadPredictionState({
 		listCurrent: async () => ({ items: [] }),
 	});
 	assert.deepEqual(empty, { status: 'empty' });
+});
+
+test('next prediction page appends unique accounts and advances the cursor', async () => {
+	let requestedCursor: string | undefined;
+	const current = {
+		status: 'ready' as const,
+		items: [prediction('acct-1'), prediction('acct-2')],
+		nextCursor: 'page-2',
+		pagination: { status: 'idle' as const },
+	};
+
+	const next = await loadNextPredictionState({
+		listCurrent: async (cursor) => {
+			requestedCursor = cursor;
+			return {
+				items: [prediction('acct-2'), prediction('acct-3')],
+				next_cursor: 'page-3',
+			};
+		},
+	}, current);
+
+	assert.equal(requestedCursor, 'page-2');
+	assert.equal(next.status, 'ready');
+	assert.deepEqual(
+		next.items.map((item) => item.account_external_id),
+		['acct-1', 'acct-2', 'acct-3'],
+	);
+	assert.equal(next.nextCursor, 'page-3');
+	assert.deepEqual(next.pagination, { status: 'idle' });
+});
+
+test('next prediction page exposes completion without another request', async () => {
+	let calls = 0;
+	const current = {
+		status: 'ready' as const,
+		items: [prediction('acct-only')],
+		pagination: { status: 'idle' as const },
+	};
+
+	const unchanged = await loadNextPredictionState({
+		listCurrent: async () => {
+			calls += 1;
+			return { items: [] };
+		},
+	}, current);
+
+	assert.equal(calls, 0);
+	assert.strictEqual(unchanged, current);
+});
+
+test('next prediction page preserves results and gives safe retry errors', async () => {
+	const current = {
+		status: 'ready' as const,
+		items: [prediction('acct-kept')],
+		nextCursor: 'page-2',
+		pagination: { status: 'loading' as const },
+	};
+
+	const unavailable = await loadNextPredictionState({
+		listCurrent: async () => {
+			throw new Error('backend detail must stay hidden');
+		},
+	}, current);
+	assert.deepEqual(unavailable, {
+		...current,
+		pagination: {
+			status: 'error',
+			message: 'More predictions are temporarily unavailable. Please try again.',
+		},
+	});
+
+	const unauthorized = await loadNextPredictionState({
+		listCurrent: async () => {
+			throw new PredictionRequestError(401);
+		},
+	}, current);
+	assert.deepEqual(unauthorized, {
+		...current,
+		pagination: {
+			status: 'error',
+			message: 'Your session has expired. Sign in again to load more predictions.',
+		},
+	});
 });
 
 test('prediction state gives safe session and generic error messages', async () => {
@@ -216,6 +326,20 @@ test('risk page renders loading, empty, error and prediction table contracts', (
 	assert.match(template, /prediction\.health_score/);
 	assert.match(template, /prediction\.risk_band/);
 	assert.match(template, /prediction\.scored_at/);
+});
+
+test('risk page exposes accessible Load more, retry, and completion states', () => {
+	const component = read('risk/risk.ts');
+	const template = read('risk/risk.html');
+	assert.match(component, /loadNextPredictionState/);
+	assert.match(component, /loadMore/);
+	assert.match(component, /isLoadingMore/);
+	assert.match(component, /paginationErrorMessage/);
+	assert.match(template, /\(click\)="loadMore\(\)"/);
+	assert.match(template, /\[disabled\]="isLoadingMore\(\)"/);
+	assert.match(template, /Loading more predictions/);
+	assert.match(template, /Try loading more again/);
+	assert.match(template, /All current predictions are shown/);
 });
 
 test('score-history page renders account context and accessible first-page states', () => {

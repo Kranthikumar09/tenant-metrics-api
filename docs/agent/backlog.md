@@ -4,17 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-031R — Paginate the current prediction list**
+**PR-032R — Paginate account score history**
 
 - Capacity: S
-- Why next: the console currently stops at the first 50 current predictions even though the tenant-safe backend cursor already exists; a bounded Load more interaction makes larger tenant portfolios usable
-- Main dependency: PR-028R
-- In scope: retain `next_cursor`, request later current-prediction pages through the same-origin session, append non-duplicate accounts, and expose accessible loading/end/error states for a Load more control
-- Out of scope: history pagination controls, backend API changes, infinite scrolling, filtering/sorting, learned-model training, customer-facing explanations, production deployment, Redis, MongoDB
+- Why next: current-risk pagination is complete, but account history still stops at its first 50 revisions even though the tenant/account-bound backend cursor already exists
+- Main dependency: PR-030R
+- In scope: retain the history `next_cursor`, request later revisions for the selected account through the same-origin session, append the page, and expose accessible loading/completion/safe-retry states
+- Out of scope: current-list changes, backend API changes, infinite scrolling, filtering/sorting, learned-model training, customer-facing explanations, production deployment, Redis, MongoDB
 
 ## Later candidates
 
-**PR-032R — Paginate account score history** is a later S-sized candidate after current-list pagination.
+Select the next candidate after PR-032R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
 
 ## Completed
 
@@ -53,7 +53,8 @@ Small PRs only. Do not implement the next item until it is approved.
 | PR-027R | Add a provider-neutral OIDC login adapter | implemented |
 | PR-028R | Console lists current predictions | implemented |
 | PR-029R | Add immutable tenant score history | implemented |
-| PR-030R | Console shows account score history | implemented in this branch |
+| PR-030R | Console shows account score history | implemented |
+| PR-031R | Paginate the current prediction list | implemented in this branch |
 
 ## Intentionally not scheduled
 

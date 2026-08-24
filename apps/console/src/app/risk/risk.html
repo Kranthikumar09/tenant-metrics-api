@@ -46,5 +46,23 @@
 				}
 			</tbody>
 		</table>
+
+		@if (hasMore()) {
+			<button type="button" [disabled]="isLoadingMore()" (click)="loadMore()">
+				@if (paginationErrorMessage()) {
+					Try loading more again
+				} @else {
+					Load more
+				}
+			</button>
+			@if (isLoadingMore()) {
+				<p role="status" aria-live="polite">Loading more predictions…</p>
+			}
+			@if (paginationErrorMessage()) {
+				<p role="alert">{{ paginationErrorMessage() }}</p>
+			}
+		} @else {
+			<p role="status">All current predictions are shown.</p>
+		}
 	}
 </section>
