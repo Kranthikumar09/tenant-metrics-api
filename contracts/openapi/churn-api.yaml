@@ -51,7 +51,11 @@ paths:
         '401':
           description: Missing or unknown API key
         '413':
-          description: Request body exceeds the configured size limit
+          description: Request body exceeds the configured byte limit, which defaults to 1 MiB
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   /v1/accounts/{account_external_id}/prediction:
     get:
       operationId: getAccountPrediction

@@ -31,6 +31,8 @@ import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.util.StringUtils;
 
+import com.tenantmetrics.platform.events.EventIngestionProperties;
+import com.tenantmetrics.platform.events.EventRequestBodyLimitFilter;
 import com.tenantmetrics.platform.tenancy.ApiKeyProperties;
 import com.tenantmetrics.platform.tenancy.TenantResolutionFilter;
 
@@ -38,7 +40,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(BrowserSessionProperties.class)
+@EnableConfigurationProperties({BrowserSessionProperties.class, EventIngestionProperties.class})
 public class PlatformSecurityConfiguration {
 
 	@Bean
@@ -47,12 +49,15 @@ public class PlatformSecurityConfiguration {
 			ApiKeyProperties apiKeyProperties,
 			AbsoluteSessionLifetimeFilter absoluteSessionLifetimeFilter,
 			TenantMembershipResolver tenantMembershipResolver,
+			EventIngestionProperties eventIngestionProperties,
 			ObjectProvider<ClientRegistrationRepository> clientRegistrations,
 			TenantOidcUserService tenantOidcUserService)
 			throws Exception {
 		TenantResolutionFilter tenantResolutionFilter = new TenantResolutionFilter(apiKeyProperties);
 		ActiveMembershipValidationFilter activeMembershipValidationFilter =
 				new ActiveMembershipValidationFilter(tenantMembershipResolver);
+		EventRequestBodyLimitFilter eventRequestBodyLimitFilter =
+				new EventRequestBodyLimitFilter(eventIngestionProperties);
 		CookieCsrfTokenRepository csrfRepository = new CookieCsrfTokenRepository();
 		csrfRepository.setCookieName("XSRF-TOKEN");
 		csrfRepository.setHeaderName("X-XSRF-TOKEN");
@@ -95,7 +100,8 @@ public class PlatformSecurityConfiguration {
 								writeProblem(response, HttpStatus.FORBIDDEN, "Access is denied")))
 				.addFilterBefore(absoluteSessionLifetimeFilter, SecurityContextHolderFilter.class)
 				.addFilterAfter(activeMembershipValidationFilter, SecurityContextHolderFilter.class)
-				.addFilterBefore(tenantResolutionFilter, CsrfFilter.class);
+				.addFilterBefore(tenantResolutionFilter, CsrfFilter.class)
+				.addFilterAfter(eventRequestBodyLimitFilter, CsrfFilter.class);
 
 		ClientRegistrationRepository registrationRepository = clientRegistrations.getIfAvailable();
 		if (registrationRepository != null) {
