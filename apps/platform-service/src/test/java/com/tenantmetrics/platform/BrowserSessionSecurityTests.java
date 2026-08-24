@@ -249,6 +249,66 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 						.doesNotContain("HttpOnly"));
 	}
 
+	@Test
+	void disabledUserRevokesPersistedBrowserSessionOnNextApiRequest() throws Exception {
+		int sessionsBefore = sessionCount();
+		String subject = "disabled-user";
+		RequestPostProcessor browserPrincipal = tenantSession(subject, "tenant-disabled-user");
+		PersistedSession session = createPersistedSession();
+		jdbcTemplate.update(
+				"UPDATE platform_users SET enabled = FALSE WHERE oidc_issuer = ? AND oidc_subject = ?",
+				"https://issuer.test/browser-session",
+				subject);
+
+		assertBrowserSessionRevoked(session, browserPrincipal, sessionsBefore);
+	}
+
+	@Test
+	void disabledMembershipRevokesPersistedBrowserSessionOnNextApiRequest() throws Exception {
+		int sessionsBefore = sessionCount();
+		String tenantId = "tenant-disabled-membership";
+		RequestPostProcessor browserPrincipal = tenantSession("disabled-membership", tenantId);
+		PersistedSession session = createPersistedSession();
+		jdbcTemplate.update(
+				"UPDATE tenant_memberships SET enabled = FALSE WHERE tenant_id = ?",
+				tenantId);
+
+		assertBrowserSessionRevoked(session, browserPrincipal, sessionsBefore);
+	}
+
+	@Test
+	void disabledTenantRevokesPersistedBrowserSessionOnNextApiRequest() throws Exception {
+		int sessionsBefore = sessionCount();
+		String tenantId = "tenant-disabled";
+		RequestPostProcessor browserPrincipal = tenantSession("disabled-tenant", tenantId);
+		PersistedSession session = createPersistedSession();
+		jdbcTemplate.update("UPDATE tenants SET enabled = FALSE WHERE tenant_id = ?", tenantId);
+
+		assertBrowserSessionRevoked(session, browserPrincipal, sessionsBefore);
+	}
+
+	@Test
+	void revokedBrowserMembershipDoesNotChangeApiKeyAuthentication() throws Exception {
+		int sessionsBefore = sessionCount();
+		String tenantId = "tenant-a";
+		RequestPostProcessor browserPrincipal = tenantSession("revoked-api-key-isolation", tenantId);
+		PersistedSession session = createPersistedSession();
+		jdbcTemplate.update(
+				"UPDATE tenant_memberships SET enabled = FALSE WHERE user_id = ? AND tenant_id = ?",
+				UUID.nameUUIDFromBytes(("https://issuer.test/browser-session|revoked-api-key-isolation")
+						.getBytes(StandardCharsets.UTF_8)),
+				tenantId);
+
+		mockMvc.perform(get("/v1/tenant-context")
+					.cookie(session.cookie())
+					.header("X-Api-Key", "tenant-a-test-key")
+					.with(browserPrincipal))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tenantId").value("tenant-a"));
+
+		assertThat(sessionCount()).isEqualTo(sessionsBefore + 1);
+	}
+
 	private int sessionCount() {
 		return jdbcTemplate.queryForObject("select count(*) from spring_session", Integer.class);
 	}
@@ -260,6 +320,27 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 		return new PersistedSession(
 				requiredCookie(result, "__Host-tm_session"),
 				Instant.ofEpochMilli(Long.parseLong(result.getResponse().getContentAsString())));
+	}
+
+	private void assertBrowserSessionRevoked(
+			PersistedSession session,
+			RequestPostProcessor browserPrincipal,
+			int sessionsBefore) throws Exception {
+		MvcResult revoked = mockMvc.perform(get("/v1/tenant-context")
+					.cookie(session.cookie())
+					.with(browserPrincipal))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.status").value(401))
+				.andExpect(jsonPath("$.detail").value("Authentication is required"))
+				.andExpect(result -> assertThat(result.getResponse().getRedirectedUrl()).isNull())
+				.andReturn();
+
+		assertThat(sessionCount()).isEqualTo(sessionsBefore);
+		assertThat(cookieHeaders(revoked, "__Host-tm_session"))
+				.anySatisfy(value -> assertThat(value)
+						.startsWith("__Host-tm_session=;")
+						.contains("Path=/", "Secure", "HttpOnly", "SameSite=Lax", "Max-Age=0"));
 	}
 
 	private record PersistedSession(Cookie cookie, Instant createdAt) {
