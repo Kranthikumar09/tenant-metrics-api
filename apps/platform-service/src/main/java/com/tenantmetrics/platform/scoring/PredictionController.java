@@ -39,6 +39,39 @@ class PredictionController {
 				.orElseGet(() -> problem(HttpStatus.NOT_FOUND, "prediction not found"));
 	}
 
+	@GetMapping("/v1/accounts/{accountExternalId}/prediction-history")
+	ResponseEntity<?> listPredictionHistory(
+			@PathVariable String accountExternalId,
+			@RequestParam(name = "limit", required = false) Integer limit,
+			@RequestParam(name = "cursor", required = false) String cursor,
+			HttpServletRequest request) {
+		TenantContext tenant = requireTenant(request);
+		int pageSize = limit == null ? DEFAULT_PAGE_SIZE : limit;
+		if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+			return problem(HttpStatus.BAD_REQUEST, "limit must be between 1 and 500");
+		}
+		Long beforeHistoryId;
+		try {
+			beforeHistoryId = decodeHistoryCursor(cursor);
+		}
+		catch (IllegalArgumentException ex) {
+			return problem(HttpStatus.BAD_REQUEST, "cursor is invalid");
+		}
+		if (accountScoreStore.find(tenant.tenantId(), accountExternalId).isEmpty()) {
+			return problem(HttpStatus.NOT_FOUND, "prediction history not found");
+		}
+		List<HistoricalScore> rows = accountScoreStore.listHistory(
+				tenant.tenantId(), accountExternalId, beforeHistoryId, pageSize + 1);
+		boolean hasMore = rows.size() > pageSize;
+		if (hasMore) {
+			rows = List.copyOf(rows.subList(0, pageSize));
+		}
+		String nextCursor = hasMore ? encodeHistoryCursor(rows.getLast().historyId()) : null;
+		return ResponseEntity.ok(new PredictionListResponse(
+				rows.stream().map(HistoricalScore::score).map(PredictionController::toResponse).toList(),
+				nextCursor));
+	}
+
 	static final int DEFAULT_PAGE_SIZE = 50;
 	static final int MAX_PAGE_SIZE = 500;
 
@@ -89,6 +122,33 @@ class PredictionController {
 				throw new IllegalArgumentException("cursor");
 			}
 			return decoded;
+		}
+		catch (IllegalArgumentException ex) {
+			throw new IllegalArgumentException("cursor");
+		}
+	}
+
+	private static String encodeHistoryCursor(long historyId) {
+		return Base64.getUrlEncoder().withoutPadding()
+				.encodeToString(Long.toString(historyId).getBytes(StandardCharsets.UTF_8));
+	}
+
+	private static Long decodeHistoryCursor(String cursor) {
+		if (cursor == null || cursor.isBlank()) {
+			return null;
+		}
+		try {
+			byte[] bytes = Base64.getUrlDecoder().decode(cursor);
+			String decoded = new String(bytes, StandardCharsets.UTF_8);
+			if (!Arrays.equals(bytes, decoded.getBytes(StandardCharsets.UTF_8))
+					|| !decoded.matches("[1-9][0-9]{0,18}")) {
+				throw new IllegalArgumentException("cursor");
+			}
+			long historyId = Long.parseLong(decoded);
+			if (historyId < 1) {
+				throw new IllegalArgumentException("cursor");
+			}
+			return historyId;
 		}
 		catch (IllegalArgumentException ex) {
 			throw new IllegalArgumentException("cursor");
