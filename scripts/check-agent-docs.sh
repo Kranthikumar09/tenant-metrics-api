@@ -54,6 +54,16 @@ forbid_file() {
   echo "ABSENT LEFTOVER FILE: ${path}"
 }
 
+forbid_path() {
+  local path="$1"
+  if [[ -e "${ROOT}/${path}" ]]; then
+    echo "LEFTOVER PATH: ${path}"
+    failures=$((failures + 1))
+    return 0
+  fi
+  echo "ABSENT LEFTOVER PATH: ${path}"
+}
+
 require_file "AGENTS.md"
 require_file "README.md"
 require_file "docs/agent/project-index.md"
@@ -130,6 +140,29 @@ forbid_text "AGENTS.md" "Do not provision or introduce the following during the 
 
 require_heading "docs/architecture/context-map.md" "must not build on the frozen modules"
 require_heading "docs/architecture/context-map.md" "frozen legacy modules"
+
+# PR-034R retirement contract: the approved applications are the only live
+# reactor/runtime paths, and the abandoned scaffold cannot silently return.
+forbid_path "api-gateway"
+forbid_path "core-service"
+forbid_path "common-models"
+forbid_text "pom.xml" "<module>api-gateway</module>"
+forbid_text "pom.xml" "<module>core-service</module>"
+forbid_text "pom.xml" "<module>common-models</module>"
+forbid_text "pom.xml" "spring-cloud"
+require_heading "README.md" "/apps/platform-service"
+require_heading "docs/architecture/context-map.md" "## Retired scaffold"
+require_heading "docs/agent/current-state.md" "Legacy scaffold retirement: complete"
+require_heading ".cursor/start.sh" "docker compose up -d postgres localstack"
+require_heading ".cursor/environment.json" "platform-service"
+require_heading ".cursor/environment.json" "apps/worker"
+require_heading ".cursor/environment.json" "apps/console"
+forbid_text ".cursor/install.sh" "MongoDB"
+forbid_text ".cursor/install.sh" "Redis"
+forbid_text ".cursor/start.sh" "MongoDB"
+forbid_text ".cursor/start.sh" "Redis"
+forbid_text ".cursor/environment.json" "core-service"
+forbid_text ".cursor/environment.json" "api-gateway"
 
 require_file "docker-compose.yml"
 require_heading "docker-compose.yml" "postgres:16-alpine"
