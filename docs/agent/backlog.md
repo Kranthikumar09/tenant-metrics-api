@@ -4,17 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-038R — Add the Angular browser logout control**
+**PR-039R — Enforce a bounded JSON body for event ingestion**
 
 - Capacity: S
-- Why next: the backend now has expiry, revocation, and CSRF-protected logout, but the Angular console still gives an authenticated user no way to invoke logout
-- Main dependency: PR-033R, PR-036R, PR-037R, and ADR-002
-- In scope: an accessible shell logout control, same-origin POST `/logout` through Angular's framework CSRF support, disabled/pending state, signed-out navigation, safe failure behavior, and console contract tests proving no application code reads cookies or stores credentials
-- Out of scope: login UI, route guards, identity-provider end-session calls, provider selection, backend changes, production IdP configuration, audit-sink implementation, UI redesign, Redis, MongoDB, or new infrastructure
+- Why next: `POST /v1/events:batch` bounds event count but not JSON bytes; the OpenAPI contract already promises 413 and threat T-04 remains open to oversized or chunked request-body exhaustion
+- Main dependency: PR-011 and the existing event-batch contract
+- In scope: a configurable event-ingestion byte limit with a conservative documented default, rejection of both declared-oversize and streamed/chunked oversize bodies with tenant-safe 413 Problem Details, focused boundary tests, and alignment of the OpenAPI description
+- Out of scope: rate limiting, decompression handling, limits on unrelated endpoints, account upsert, schema-property allowlists, infrastructure/WAF changes, billing, Redis, or MongoDB
 
 ## Later candidates
 
-Select the next candidate after PR-038R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
+Select the next candidate after PR-039R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
 
 ## Completed
 
@@ -60,7 +60,8 @@ Select the next candidate after PR-038R using the product contract and remaining
 | PR-034R | Retire the legacy scaffold and align local tooling | implemented |
 | PR-035R | Enforce the absolute browser-session lifetime | implemented |
 | PR-036R | Add CSRF-protected browser logout | implemented |
-| PR-037R | Revoke browser sessions when membership access is disabled | implemented in this branch |
+| PR-037R | Revoke browser sessions when membership access is disabled | implemented |
+| PR-038R | Add the Angular browser logout control | implemented in this branch |
 
 ## Intentionally not scheduled
 

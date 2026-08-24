@@ -5,6 +5,26 @@
 			<a routerLink="/onboarding" routerLinkActive="active">Onboarding</a>
 			<a routerLink="/risk" routerLinkActive="active">Risk</a>
 		</nav>
+		<div class="session-actions">
+			<button
+				type="button"
+				(click)="signOut()"
+				[disabled]="logoutStatus().status === 'pending'"
+			>
+				@if (logoutStatus().status === 'pending') {
+					Signing out…
+				} @else {
+					Sign out
+				}
+			</button>
+			<p class="session-status" aria-live="polite">
+				@if (logoutStatus().status === 'signed-out') {
+					Signed out securely.
+				} @else if (logoutErrorMessage(); as errorMessage) {
+					{{ errorMessage }}
+				}
+			</p>
+		</div>
 	</header>
 	<main>
 		<router-outlet />

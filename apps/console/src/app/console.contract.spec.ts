@@ -4,6 +4,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
+import { requestLogout } from './auth/logout.ts';
+
 import {
 	PredictionClient,
 	PredictionRequestError,
@@ -95,13 +97,56 @@ test('local development proxies only API and authentication paths to platform-se
 
 	const proxy = JSON.parse(readFileSync(join(appDir, '../../proxy.conf.json'), 'utf8')) as
 		Record<string, unknown>;
-	assert.deepEqual(Object.keys(proxy).sort(), ['/login', '/oauth2', '/v1']);
+	assert.deepEqual(Object.keys(proxy).sort(), ['/login', '/logout', '/oauth2', '/v1']);
 	for (const path of Object.keys(proxy)) {
 		assert.deepEqual(proxy[path], {
 			target: 'http://localhost:8080',
 			changeOrigin: false,
 		});
 	}
+});
+
+test('logout outcome does not expose backend failure details', async () => {
+	const result = await requestLogout(
+		async () => {
+			throw new Error('database and identity-provider detail must stay hidden');
+		},
+	);
+
+	assert.deepEqual(result, {
+		status: 'error',
+		message: 'We could not sign you out. Please try again.',
+	});
+});
+
+test('logout outcome reports successful server invalidation', async () => {
+	let requests = 0;
+	const result = await requestLogout(async () => {
+		requests += 1;
+	});
+
+	assert.equal(requests, 1);
+	assert.deepEqual(result, { status: 'signed-out' });
+});
+
+test('shell exposes accessible pending, success, and retryable logout states', () => {
+	const component = read('app.ts');
+	const template = read('app.html');
+	const main = read('../main.ts');
+	assert.match(main, /provideHttpClient/);
+	assert.match(main, /withXsrfConfiguration/);
+	assert.match(main, /cookieName:\s*'XSRF-TOKEN'/);
+	assert.match(main, /headerName:\s*'X-XSRF-TOKEN'/);
+	assert.match(component, /requestLogout/);
+	assert.match(component, /\.post<void>\('\/logout',\s*null,\s*\{\s*withCredentials:\s*true\s*\}\)/s);
+	assert.doesNotMatch(component, /Authorization|Bearer|X-Api-Key/);
+	assert.match(component, /navigateByUrl\('\/onboarding'\)/);
+	assert.match(template, /type="button"/);
+	assert.match(template, /\(click\)="signOut\(\)"/);
+	assert.match(template, /\[disabled\]="logoutStatus\(\)\.status === 'pending'"/);
+	assert.match(template, /Signing out/);
+	assert.match(template, /Signed out securely/);
+	assert.match(template, /aria-live="polite"/);
 });
 
 test('prediction client uses only the same-origin browser session', async () => {

@@ -22,6 +22,32 @@ nav {
 	gap: 1rem;
 }
 
+.session-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-left: auto;
+}
+
+.session-actions button {
+	padding: 0.45rem 0.8rem;
+	border: 1px solid #8c959f;
+	border-radius: 0.375rem;
+	background: #ffffff;
+	cursor: pointer;
+}
+
+.session-actions button:disabled {
+	cursor: wait;
+	opacity: 0.65;
+}
+
+.session-status {
+	margin: 0;
+	color: #57606a;
+	font-size: 0.875rem;
+}
+
 nav a {
 	color: #0969da;
 	text-decoration: none;
