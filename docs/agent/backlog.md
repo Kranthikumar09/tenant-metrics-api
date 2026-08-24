@@ -4,17 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-040R — Lock the tenant account-upsert API contract**
+**PR-041R — Implement tenant-scoped account upsert**
 
-- Capacity: XS
-- Why next: account upsert is a named v1 and activation requirement, but the repository does not define its endpoint, minimal mutable fields, idempotency semantics, or tenant-safe error contract; implementing persistence first would invent product behavior
-- Main dependency: the PRD account-upsert traceability row, existing TenantContext rules, and the versioned OpenAPI contract
-- In scope: lock one minimal account-upsert endpoint and schema in OpenAPI, define create/update/idempotency and tenant-isolation semantics, add contract guardrails, and update repository memory
-- Out of scope: Java implementation, Flyway migration, console onboarding workflow, bulk import, deletion/retention, arbitrary metadata, billing, webhooks, Redis, MongoDB, or new infrastructure
+- Capacity: S
+- Why next: PR-040R locks the public behavior and account upsert is required for tenant activation, but no account resource is persisted or callable yet
+- Main dependency: PR-040R, TenantContext, PostgreSQL/Flyway, and the existing tenant-isolation test approach
+- In scope: Flyway V8 tenant-owned accounts table, `POST /v1/accounts:upsert`, 201 create and 200 retry behavior, database-enforced tenant-plus-external-ID uniqueness, malformed-input handling, concurrent/retry idempotency tests, and cross-tenant same-ID isolation tests
+- Out of scope: requiring events or scores to reference an account, mutable account attributes, console onboarding, bulk import, deletion/retention, usage metering, webhooks, Redis, MongoDB, or new infrastructure
 
 ## Later candidates
 
-Select the next candidate after PR-040R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
+Select the next candidate after PR-041R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
 
 ## Completed
 
@@ -62,7 +62,8 @@ Select the next candidate after PR-040R using the product contract and remaining
 | PR-036R | Add CSRF-protected browser logout | implemented |
 | PR-037R | Revoke browser sessions when membership access is disabled | implemented |
 | PR-038R | Add the Angular browser logout control | implemented |
-| PR-039R | Enforce a bounded JSON body for event ingestion | implemented in this branch |
+| PR-039R | Enforce a bounded JSON body for event ingestion | implemented |
+| PR-040R | Lock the tenant account-upsert API contract | implemented in this branch |
 
 ## Intentionally not scheduled
 
