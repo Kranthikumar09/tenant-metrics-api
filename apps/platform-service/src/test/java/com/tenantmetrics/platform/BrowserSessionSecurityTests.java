@@ -184,6 +184,71 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 		assertThat(sessionCount()).isEqualTo(sessionsBefore);
 	}
 
+	@Test
+	void browserLogoutRequiresPostAndCsrfWithoutInvalidatingRejectedSessions() throws Exception {
+		int sessionsBefore = sessionCount();
+		PersistedSession session = createPersistedSession();
+
+		mockMvc.perform(get("/logout")
+					.cookie(session.cookie())
+					.with(tenantSession("user-a", "tenant-a")))
+				.andExpect(status().isForbidden());
+		assertThat(sessionCount()).isEqualTo(sessionsBefore + 1);
+
+		mockMvc.perform(post("/logout")
+					.cookie(session.cookie())
+					.with(tenantSession("user-a", "tenant-a")))
+				.andExpect(status().isForbidden())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.status").value(403));
+		assertThat(sessionCount()).isEqualTo(sessionsBefore + 1);
+	}
+
+	@Test
+	void apiKeyHeaderCannotBypassBrowserLogoutCsrfProtection() throws Exception {
+		int sessionsBefore = sessionCount();
+		PersistedSession session = createPersistedSession();
+
+		mockMvc.perform(post("/logout")
+					.cookie(session.cookie())
+					.header("X-Api-Key", "tenant-a-test-key")
+					.with(tenantSession("user-a", "tenant-a")))
+				.andExpect(status().isForbidden())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.status").value(403));
+
+		assertThat(sessionCount()).isEqualTo(sessionsBefore + 1);
+	}
+
+	@Test
+	void csrfProtectedPostLogoutInvalidatesSessionClearsCookieAndIssuesFreshCsrf() throws Exception {
+		int sessionsBefore = sessionCount();
+		PersistedSession session = createPersistedSession();
+		MvcResult csrf = mockMvc.perform(get("/actuator/health"))
+				.andExpect(status().isOk())
+				.andReturn();
+		Cookie csrfCookie = requiredCookie(csrf, "XSRF-TOKEN");
+
+		MvcResult logout = mockMvc.perform(post("/logout")
+					.cookie(session.cookie(), csrfCookie)
+					.header("X-XSRF-TOKEN", csrfCookie.getValue())
+					.with(tenantSession("user-a", "tenant-a")))
+				.andExpect(status().isNoContent())
+				.andExpect(result -> assertThat(result.getResponse().getRedirectedUrl()).isNull())
+				.andReturn();
+
+		assertThat(sessionCount()).isEqualTo(sessionsBefore);
+		assertThat(cookieHeaders(logout, "__Host-tm_session"))
+				.anySatisfy(value -> assertThat(value)
+						.startsWith("__Host-tm_session=;")
+						.contains("Path=/", "Secure", "HttpOnly", "SameSite=Lax", "Max-Age=0"));
+		assertThat(cookieHeaders(logout, "XSRF-TOKEN"))
+				.anySatisfy(value -> assertThat(value)
+						.doesNotStartWith("XSRF-TOKEN=;")
+						.contains("Path=/", "Secure")
+						.doesNotContain("HttpOnly"));
+	}
+
 	private int sessionCount() {
 		return jdbcTemplate.queryForObject("select count(*) from spring_session", Integer.class);
 	}
@@ -201,10 +266,15 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 	}
 
 	private static String cookieHeader(MvcResult result, String name) {
-		return result.getResponse().getHeaders("Set-Cookie").stream()
-				.filter(value -> value.startsWith(name + "="))
+		return cookieHeaders(result, name).stream()
 				.findFirst()
 				.orElseThrow(() -> new AssertionError("Missing cookie " + name));
+	}
+
+	private static List<String> cookieHeaders(MvcResult result, String name) {
+		return result.getResponse().getHeaders("Set-Cookie").stream()
+				.filter(value -> value.startsWith(name + "="))
+				.toList();
 	}
 
 	private static Cookie requiredCookie(MvcResult result, String name) {
