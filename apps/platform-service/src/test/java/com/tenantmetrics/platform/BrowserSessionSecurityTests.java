@@ -252,8 +252,8 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 	@Test
 	void disabledUserRevokesPersistedBrowserSessionOnNextApiRequest() throws Exception {
 		int sessionsBefore = sessionCount();
-		String subject = "disabled-user";
-		RequestPostProcessor browserPrincipal = tenantSession(subject, "tenant-disabled-user");
+		String subject = "session-revoked-disabled-user";
+		RequestPostProcessor browserPrincipal = tenantSession(subject, "tenant-session-revoked-user");
 		PersistedSession session = createPersistedSession();
 		jdbcTemplate.update(
 				"UPDATE platform_users SET enabled = FALSE WHERE oidc_issuer = ? AND oidc_subject = ?",
@@ -266,8 +266,8 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 	@Test
 	void disabledMembershipRevokesPersistedBrowserSessionOnNextApiRequest() throws Exception {
 		int sessionsBefore = sessionCount();
-		String tenantId = "tenant-disabled-membership";
-		RequestPostProcessor browserPrincipal = tenantSession("disabled-membership", tenantId);
+		String tenantId = "tenant-session-revoked-membership";
+		RequestPostProcessor browserPrincipal = tenantSession("session-revoked-disabled-membership", tenantId);
 		PersistedSession session = createPersistedSession();
 		jdbcTemplate.update(
 				"UPDATE tenant_memberships SET enabled = FALSE WHERE tenant_id = ?",
@@ -280,7 +280,7 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 	void disabledTenantRevokesPersistedBrowserSessionOnNextApiRequest() throws Exception {
 		int sessionsBefore = sessionCount();
 		String tenantId = "tenant-session-revoked-tenant";
-		RequestPostProcessor browserPrincipal = tenantSession("disabled-tenant", tenantId);
+		RequestPostProcessor browserPrincipal = tenantSession("session-revoked-disabled-tenant", tenantId);
 		PersistedSession session = createPersistedSession();
 		jdbcTemplate.update("UPDATE tenants SET enabled = FALSE WHERE tenant_id = ?", tenantId);
 
