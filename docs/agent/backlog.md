@@ -4,17 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-037R — Revoke browser sessions when membership access is disabled**
+**PR-038R — Add the Angular browser logout control**
 
 - Capacity: S
-- Why next: ADR-002 requires server-side invalidation after membership removal or account disablement, while an already active browser principal currently keeps its tenant authority until logout or timeout
-- Main dependency: PR-026R, PR-035R, PR-036R, and ADR-002
-- In scope: revalidate an authenticated browser principal against the exact enabled user, tenant, and membership before tenant API access; invalidate its PostgreSQL session and clear its cookie on revocation; return safe JSON 401; prove user, membership, and tenant disablement plus API-key isolation
-- Out of scope: admin mutation APIs, background bulk session deletion, Angular changes, identity-provider end-session calls, production IdP configuration, audit-sink implementation, Redis, MongoDB, or new infrastructure
+- Why next: the backend now has expiry, revocation, and CSRF-protected logout, but the Angular console still gives an authenticated user no way to invoke logout
+- Main dependency: PR-033R, PR-036R, PR-037R, and ADR-002
+- In scope: an accessible shell logout control, same-origin POST `/logout` through Angular's framework CSRF support, disabled/pending state, signed-out navigation, safe failure behavior, and console contract tests proving no application code reads cookies or stores credentials
+- Out of scope: login UI, route guards, identity-provider end-session calls, provider selection, backend changes, production IdP configuration, audit-sink implementation, UI redesign, Redis, MongoDB, or new infrastructure
 
 ## Later candidates
 
-Select the next candidate after PR-037R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
+Select the next candidate after PR-038R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
 
 ## Completed
 
@@ -59,7 +59,8 @@ Select the next candidate after PR-037R using the product contract and remaining
 | PR-033R | Add the same-origin Angular development proxy | implemented |
 | PR-034R | Retire the legacy scaffold and align local tooling | implemented |
 | PR-035R | Enforce the absolute browser-session lifetime | implemented |
-| PR-036R | Add CSRF-protected browser logout | implemented in this branch |
+| PR-036R | Add CSRF-protected browser logout | implemented |
+| PR-037R | Revoke browser sessions when membership access is disabled | implemented in this branch |
 
 ## Intentionally not scheduled
 

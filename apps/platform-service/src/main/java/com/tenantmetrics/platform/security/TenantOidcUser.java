@@ -27,6 +27,10 @@ public final class TenantOidcUser extends DefaultOidcUser {
 		return membership.tenantId();
 	}
 
+	TenantSessionPrincipal membership() {
+		return membership;
+	}
+
 	@Override
 	public String getName() {
 		return membership.getName();

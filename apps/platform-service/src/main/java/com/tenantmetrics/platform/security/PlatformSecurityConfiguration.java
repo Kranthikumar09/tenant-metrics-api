@@ -46,10 +46,13 @@ public class PlatformSecurityConfiguration {
 			HttpSecurity http,
 			ApiKeyProperties apiKeyProperties,
 			AbsoluteSessionLifetimeFilter absoluteSessionLifetimeFilter,
+			TenantMembershipResolver tenantMembershipResolver,
 			ObjectProvider<ClientRegistrationRepository> clientRegistrations,
 			TenantOidcUserService tenantOidcUserService)
 			throws Exception {
 		TenantResolutionFilter tenantResolutionFilter = new TenantResolutionFilter(apiKeyProperties);
+		ActiveMembershipValidationFilter activeMembershipValidationFilter =
+				new ActiveMembershipValidationFilter(tenantMembershipResolver);
 		CookieCsrfTokenRepository csrfRepository = new CookieCsrfTokenRepository();
 		csrfRepository.setCookieName("XSRF-TOKEN");
 		csrfRepository.setHeaderName("X-XSRF-TOKEN");
@@ -91,6 +94,7 @@ public class PlatformSecurityConfiguration {
 						.accessDeniedHandler((request, response, exception) ->
 								writeProblem(response, HttpStatus.FORBIDDEN, "Access is denied")))
 				.addFilterBefore(absoluteSessionLifetimeFilter, SecurityContextHolderFilter.class)
+				.addFilterAfter(activeMembershipValidationFilter, SecurityContextHolderFilter.class)
 				.addFilterBefore(tenantResolutionFilter, CsrfFilter.class);
 
 		ClientRegistrationRepository registrationRepository = clientRegistrations.getIfAvailable();
