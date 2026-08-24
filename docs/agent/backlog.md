@@ -4,13 +4,13 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-032R — Paginate account score history**
+**PR-033R — Add the same-origin Angular development proxy**
 
-- Capacity: S
-- Why next: current-risk pagination is complete, but account history still stops at its first 50 revisions even though the tenant/account-bound backend cursor already exists
-- Main dependency: PR-030R
-- In scope: retain the history `next_cursor`, request later revisions for the selected account through the same-origin session, append the page, and expose accessible loading/completion/safe-retry states
-- Out of scope: current-list changes, backend API changes, infinite scrolling, filtering/sorting, learned-model training, customer-facing explanations, production deployment, Redis, MongoDB
+- Capacity: XS
+- Why next: ADR-002 requires local Angular API and authentication requests to reach `platform-service` through one browser origin, but `ng serve` currently has no proxy configuration; closing this gap makes the implemented console/session path locally operable without adding infrastructure
+- Main dependency: ADR-002 and the existing console/backend routes
+- In scope: an Angular development proxy for `/v1`, `/oauth2`, and `/login` to the local platform service, wiring it into `ng serve`, and a fail-first configuration contract that rejects missing or overly broad proxy paths
+- Out of scope: production reverse proxy or deployment, selecting/configuring an identity provider, login UI, backend/security changes, CORS, credentials, TLS automation, Redis, MongoDB, or new infrastructure
 
 ## Later candidates
 
@@ -54,7 +54,8 @@ Select the next candidate after PR-032R using the product contract and remaining
 | PR-028R | Console lists current predictions | implemented |
 | PR-029R | Add immutable tenant score history | implemented |
 | PR-030R | Console shows account score history | implemented |
-| PR-031R | Paginate the current prediction list | implemented in this branch |
+| PR-031R | Paginate the current prediction list | implemented |
+| PR-032R | Paginate account score history | implemented in this branch |
 
 ## Intentionally not scheduled
 
