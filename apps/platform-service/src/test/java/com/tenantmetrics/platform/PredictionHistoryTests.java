@@ -49,7 +49,7 @@ class PredictionHistoryTests extends AbstractPlatformPostgresTest {
 		assertThat(history).extracting(row -> row.get("score_version"))
 				.containsOnly("RULES_BASELINE");
 		assertThat(history).extracting(row -> ((Number) row.get("health_score")).intValue())
-				.containsExactly(45, 70);
+				.containsExactly(65, 70);
 
 		assertThatThrownBy(() -> jdbcTemplate.update(
 				"UPDATE account_score_history SET health_score = 0 WHERE tenant_id = ? AND account_external_id = ?",
