@@ -20,11 +20,19 @@ export interface PredictionListResponse {
 export type PredictionViewState =
 	| { status: 'loading' }
 	| { status: 'empty' }
-	| { status: 'ready'; items: readonly Prediction[] }
+	| {
+		status: 'ready';
+		items: readonly Prediction[];
+		nextCursor?: string;
+		pagination:
+			| { status: 'idle' }
+			| { status: 'loading' }
+			| { status: 'error'; message: string };
+	}
 	| { status: 'error'; message: string };
 
 export interface PredictionSource {
-	listCurrent(): Promise<PredictionListResponse>;
+	listCurrent(cursor?: string): Promise<PredictionListResponse>;
 }
 
 export interface PredictionHistorySource {
@@ -50,8 +58,14 @@ export class PredictionClient implements PredictionSource, PredictionHistorySour
 		this.fetcher = fetcher;
 	}
 
-	async listCurrent(): Promise<PredictionListResponse> {
-		return this.list('/v1/predictions?limit=50');
+	async listCurrent(cursor?: string): Promise<PredictionListResponse> {
+		if (cursor !== undefined && cursor.length === 0) {
+			throw new PredictionRequestError(400);
+		}
+		const cursorQuery = cursor === undefined
+			? ''
+			: `&cursor=${encodeURIComponent(cursor)}`;
+		return this.list(`/v1/predictions?limit=50${cursorQuery}`);
 	}
 
 	async listHistory(accountExternalId: string): Promise<PredictionListResponse> {
@@ -106,6 +120,44 @@ export async function loadPredictionHistoryState(
 	);
 }
 
+export async function loadNextPredictionState(
+	source: PredictionSource,
+	current: Extract<PredictionViewState, { status: 'ready' }>,
+): Promise<Extract<PredictionViewState, { status: 'ready' }>> {
+	if (current.nextCursor === undefined) {
+		return current;
+	}
+
+	try {
+		const response = await source.listCurrent(current.nextCursor);
+		const seenAccounts = new Set(current.items.map((item) => item.account_external_id));
+		const uniqueItems = response.items.filter((item) => {
+			if (seenAccounts.has(item.account_external_id)) {
+				return false;
+			}
+			seenAccounts.add(item.account_external_id);
+			return true;
+		});
+		return {
+			status: 'ready',
+			items: [...current.items, ...uniqueItems],
+			...(response.next_cursor === undefined
+				? {}
+				: { nextCursor: response.next_cursor }),
+			pagination: { status: 'idle' },
+		};
+	}
+	catch (error) {
+		const message = error instanceof PredictionRequestError && error.status === 401
+			? 'Your session has expired. Sign in again to load more predictions.'
+			: 'More predictions are temporarily unavailable. Please try again.';
+		return {
+			...current,
+			pagination: { status: 'error', message },
+		};
+	}
+}
+
 async function loadState(
 	request: () => Promise<PredictionListResponse>,
 	unauthorizedMessage: string,
@@ -115,7 +167,14 @@ async function loadState(
 		const response = await request();
 		return response.items.length === 0
 			? { status: 'empty' }
-			: { status: 'ready', items: response.items };
+			: {
+				status: 'ready',
+				items: response.items,
+				...(response.next_cursor === undefined
+					? {}
+					: { nextCursor: response.next_cursor }),
+				pagination: { status: 'idle' },
+			};
 	}
 	catch (error) {
 		if (error instanceof PredictionRequestError && error.status === 401) {
