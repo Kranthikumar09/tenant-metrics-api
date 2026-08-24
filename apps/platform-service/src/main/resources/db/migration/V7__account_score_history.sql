@@ -1,5 +1,6 @@
 CREATE TABLE account_score_history (
 	history_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	cursor_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
 	tenant_id VARCHAR(128) NOT NULL,
 	account_external_id VARCHAR(128) NOT NULL,
 	eligibility VARCHAR(32) NOT NULL,
