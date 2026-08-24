@@ -4,17 +4,17 @@ Small PRs only. Do not implement the next item until it is approved.
 
 ## Next recommended PR
 
-**PR-035R — Enforce the absolute browser-session lifetime**
+**PR-036R — Add CSRF-protected browser logout**
 
 - Capacity: S
-- Why next: ADR-002 requires an eight-hour absolute browser-session lifetime, while the current PostgreSQL session foundation enforces only the 30-minute idle timeout; closing this accepted security gap bounds a stolen session even when it remains active
-- Main dependency: PR-025R and ADR-002
-- In scope: configurable eight-hour default absolute lifetime, server-side expiry/invalidation based on trusted session creation time, safe 401 behavior after expiry, and clock-controlled tests that prove activity cannot extend the absolute deadline
-- Out of scope: membership/account lifecycle revocation, logout UI, production IdP configuration, Angular changes, machine API-key behavior, Redis, MongoDB, or new infrastructure
+- Why next: ADR-002 requires CSRF-protected server-side logout, while the current security configuration still disables logout; this is the next smallest session-lifecycle gap after absolute expiry
+- Main dependency: PR-025R, PR-035R, and ADR-002
+- In scope: POST-only browser logout, CSRF enforcement, PostgreSQL session invalidation, session-cookie clearing, safe response behavior, and integration tests
+- Out of scope: Angular logout UI, identity-provider end-session calls, membership/account lifecycle revocation, production IdP configuration, machine API-key behavior, Redis, MongoDB, or new infrastructure
 
 ## Later candidates
 
-Select the next candidate after PR-035R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
+Select the next candidate after PR-036R using the product contract and remaining milestone risks; do not pre-commit to learned-model or deployment work.
 
 ## Completed
 
@@ -57,7 +57,8 @@ Select the next candidate after PR-035R using the product contract and remaining
 | PR-031R | Paginate the current prediction list | implemented |
 | PR-032R | Paginate account score history | implemented |
 | PR-033R | Add the same-origin Angular development proxy | implemented |
-| PR-034R | Retire the legacy scaffold and align local tooling | implemented in this branch |
+| PR-034R | Retire the legacy scaffold and align local tooling | implemented |
+| PR-035R | Enforce the absolute browser-session lifetime | implemented in this branch |
 
 ## Intentionally not scheduled
 

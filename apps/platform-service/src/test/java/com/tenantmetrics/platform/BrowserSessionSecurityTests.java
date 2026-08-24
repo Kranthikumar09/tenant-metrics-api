@@ -1,9 +1,15 @@
 package com.tenantmetrics.platform;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -39,7 +45,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @AutoConfigureMockMvc
-@Import(BrowserSessionSecurityTests.SessionProbeConfiguration.class)
+@Import({BrowserSessionSecurityTests.SessionProbeConfiguration.class,
+		BrowserSessionSecurityTests.AbsoluteLifetimeClockConfiguration.class})
 class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 
 	@Autowired
@@ -50,6 +57,14 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 
 	@Autowired
 	private TenantMembershipResolver membershipResolver;
+
+	@Autowired
+	private AdjustableClock absoluteSessionClock;
+
+	@BeforeEach
+	void resetAbsoluteSessionClock() {
+		absoluteSessionClock.setInstant(Instant.EPOCH);
+	}
 
 	@Test
 	void sessionIsPersistedInPostgresWithProductionCookieAttributes() throws Exception {
@@ -130,8 +145,59 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 				.andExpect(result -> assertThat(result.getResponse().getRedirectedUrl()).isNull());
 	}
 
+	@Test
+	void browserActivityCannotExtendTheEightHourAbsoluteLifetime() throws Exception {
+		int sessionsBefore = sessionCount();
+		PersistedSession session = createPersistedSession();
+
+		absoluteSessionClock.setInstant(session.createdAt().plus(Duration.ofHours(8)).minusSeconds(1));
+		mockMvc.perform(get("/v1/tenant-context")
+					.cookie(session.cookie())
+					.with(tenantSession("user-a", "tenant-a")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tenantId").value("tenant-a"));
+
+		absoluteSessionClock.setInstant(session.createdAt().plus(Duration.ofHours(8)));
+		mockMvc.perform(get("/v1/tenant-context")
+					.cookie(session.cookie())
+					.with(tenantSession("user-a", "tenant-a")))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.status").value(401))
+				.andExpect(result -> assertThat(result.getResponse().getRedirectedUrl()).isNull());
+
+		assertThat(sessionCount()).isEqualTo(sessionsBefore);
+	}
+
+	@Test
+	void expiredBrowserSessionDoesNotChangeApiKeyAuthentication() throws Exception {
+		int sessionsBefore = sessionCount();
+		PersistedSession session = createPersistedSession();
+		absoluteSessionClock.setInstant(session.createdAt().plus(Duration.ofHours(8)));
+
+		mockMvc.perform(get("/v1/tenant-context")
+					.cookie(session.cookie())
+					.header("X-Api-Key", "tenant-a-test-key"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tenantId").value("tenant-a"));
+
+		assertThat(sessionCount()).isEqualTo(sessionsBefore);
+	}
+
 	private int sessionCount() {
 		return jdbcTemplate.queryForObject("select count(*) from spring_session", Integer.class);
+	}
+
+	private PersistedSession createPersistedSession() throws Exception {
+		MvcResult result = mockMvc.perform(get("/test/session-probe"))
+				.andExpect(status().isOk())
+				.andReturn();
+		return new PersistedSession(
+				requiredCookie(result, "__Host-tm_session"),
+				Instant.ofEpochMilli(Long.parseLong(result.getResponse().getContentAsString())));
+	}
+
+	private record PersistedSession(Cookie cookie, Instant createdAt) {
 	}
 
 	private static String cookieHeader(MvcResult result, String name) {
@@ -219,13 +285,46 @@ class BrowserSessionSecurityTests extends AbstractPlatformPostgresTest {
 		}
 	}
 
+	@TestConfiguration(proxyBeanMethods = false)
+	static class AbsoluteLifetimeClockConfiguration {
+
+		@Bean
+		AdjustableClock absoluteSessionClock() {
+			return new AdjustableClock();
+		}
+	}
+
+	static final class AdjustableClock extends Clock {
+
+		private Instant instant = Instant.EPOCH;
+
+		void setInstant(Instant instant) {
+			this.instant = instant;
+		}
+
+		@Override
+		public ZoneId getZone() {
+			return ZoneOffset.UTC;
+		}
+
+		@Override
+		public Clock withZone(ZoneId zone) {
+			return Clock.fixed(instant, zone);
+		}
+
+		@Override
+		public Instant instant() {
+			return instant;
+		}
+	}
+
 	@RestController
 	static class SessionProbeController {
 
 		@GetMapping("/test/session-probe")
-		String createSession(HttpSession session) {
+		long createSession(HttpSession session) {
 			session.setAttribute("probe", "persisted");
-			return "ok";
+			return session.getCreationTime();
 		}
 	}
 }
